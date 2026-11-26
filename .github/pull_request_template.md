@@ -15,6 +15,8 @@
 - [ ] **行数**：`pwsh ./tools/check-size.ps1` 通过（单文件 ≤ 400 行）。
 - [ ] **验证**：`cargo test --locked --all-targets` 与 `cargo clippy --locked --all-targets` 通过；
       涉及 UI/托盘/面板的改动，已实机跑过并说明验证方式。
+- [ ] **文档**：改了 `README.md` 就同步 `README.en.md`（`pwsh ./tools/check-readme.ps1` 会比对
+      标题结构与站内链接）；新增设计决策请补 `docs/adr/`。
 - [ ] **读数纪律**：拿不到的温度/电量仍然显示 “—”，没有为了好看编造数值或兜底成 0。
 
 ## 备注

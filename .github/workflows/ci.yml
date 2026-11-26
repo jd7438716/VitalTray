@@ -42,6 +42,11 @@ jobs:
         shell: pwsh
         run: ./tools/check-cleanroom.ps1
 
+      # 双语 README：标题层级与站内链接必须对齐，防止改了中文忘了英文。
+      - name: README 双语门禁（中英结构对齐）
+        shell: pwsh
+        run: ./tools/check-readme.ps1
+
       # 界面只按名字引用 Windows 系统字体（不复制、不分发字体文件）。字体文件入库 = 分发
       # 受版权保护的字体软件，违反许可；这条门禁把它挡在合并之前。
       - name: 字体门禁（仓库不得含字体文件）

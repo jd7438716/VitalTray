@@ -49,6 +49,11 @@
   CI 与 PR 模板各加一项：`git ls-files` 里出现 `.ttf/.ttc/.otf` 等字体文件即失败。
   `.gitignore` 同步忽略字体后缀，防止"顺手 copy 系统字体"。
 - README 增加「名称与商标」：与同名项目无关、MIT 不含商标授权、更名前的同名检索证据。
+- **README 双语**：新增英文版 [README.en.md](README.en.md)（与中文版同结构，顶部互加语言切换）；
+  新增 `tools/check-readme.ps1` 门禁（比对两版的标题层级与站内链接，CI 跑），防止改了中文忘了英文。
+  内部工程文档（PLAN / ADR / DEVLOG / licenses / protocol-notes）**不做翻译**，维持中文。
+- **仓库 About 改为英文描述并指向新 Releases**：更名后主页链接仍指旧仓库，已修正，
+  描述补上 `wireless mouse/keyboard battery`、`tray`、`Windows` 等关键词（影响外部检索命中）。
 
 ### 变更（破坏性：产品更名）
 
