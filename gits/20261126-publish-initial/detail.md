@@ -37,3 +37,15 @@ git push -u origin main
 - 新增 `LICENSE`（MIT，与 `Cargo.toml` 的 `license = "MIT"` 对齐）
 - 改写 `.gitignore`（分组注释 + 新增 `tmp/`、`research/`）
 - 新增本决策记录 `gits/20261126-publish-initial/`
+
+## 第二轮追加（同一 logid）
+
+| 项 | 内容 | 校验 |
+|---|---|---|
+| `.gitattributes` | `* text=auto eol=lf` + ps1/bat/cmd 用 CRLF + 二进制清单 | `git add --renormalize` 无内容变化 |
+| `.github/workflows/ci.yml` | 行数门禁 → clippy → test → release 构建 → `--self-test` → 上传 exe | 本地同序执行全绿 |
+| `.github/workflows/release.yml` | tag `v*` 触发，校验版本 → 构建 → 自检 → SHA256 → GitHub Release | 待打 tag 时验证 |
+| clippy | 修 `len_zero`（`is_empty()`）+ 3 处 `not_unsafe_ptr_arg_deref`（`menu::show` 标 `unsafe`） | `cargo clippy` 0 error / 27 warning |
+| 测试 | `cargo test --locked --all-targets` | 46 passed / 0 failed |
+| 自检 | `batteryhub.exe --self-test` | 退出码 0、SELFTEST OK |
+| README | 顶部加 CI 徽章 + MIT 徽章 | — |

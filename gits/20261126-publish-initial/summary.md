@@ -18,4 +18,7 @@
 
 ## 结果
 
+- 首次提交：`385aeb2`（87 文件 / 8476 行），已 push 到 `origin/main`，远端 HEAD 与本地一致。
+- 后续同轮追加（见 decision-chain D6–D8）：`.gitattributes`、CI workflow、clippy 清理、仓库元数据。
+
 见 `detail.md` 与 `decision-chain.md`。

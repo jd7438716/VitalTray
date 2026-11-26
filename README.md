@@ -1,5 +1,8 @@
 # BatteryHub（自研版）
 
+[![CI](https://github.com/jd7438716/battery-hub/actions/workflows/ci.yml/badge.svg)](https://github.com/jd7438716/battery-hub/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 Windows 10/11 托盘工具：**无线外设电量 + 整机状态面板**（CPU / 内存 / GPU / 磁盘 / 温度）。
 Rust + 原生 Win32，零第三方运行时，MIT。
 
@@ -30,6 +33,7 @@ cargo build --release
   贴着鼠标弹出、自动避开屏幕边缘。
 - **右键托盘图标** → 原生菜单做功能：立即刷新 / 打开日志目录 / 开机自启 / 托盘图标开关 /
   图标样式 / 调试日志 / 关于 / 退出。
+- **鼠标悬停托盘图标** → 提示只显示标题 `BatteryHub`；电量、续航都在左键面板里，提示不重复数字。
 - 面板里**只有信息、没有按钮**：点任意处、按 `Esc`、再点一次托盘 → 收起；
   在面板上按右键也是收起面板、把菜单交出来（左键=看，右键=做，两边不混）。
 - **任务栏文本已移除**：按用户反馈，不再往任务栏里塞文字；所有信息进面板。

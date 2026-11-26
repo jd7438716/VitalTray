@@ -33,7 +33,10 @@ fn separator(menu: *mut core::ffi::c_void) {
 }
 
 /// 弹出菜单并返回被选中的命令 id（0 = 取消）。
-pub fn show(
+///
+/// # Safety
+/// `hwnd` 必须是本进程创建、仍然有效的窗口句柄（调用期间不得销毁）。
+pub unsafe fn show(
     hwnd: HWND,
     autostart_on: bool,
     tray_on: bool,

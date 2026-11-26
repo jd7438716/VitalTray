@@ -1,0 +1,16 @@
+# 换行统一：仓库内一律 LF（Windows 上也不会再刷 "LF will be replaced by CRLF" 警告）
+* text=auto eol=lf
+
+# Windows 脚本保持 CRLF，方便用记事本 / 旧版 PowerShell 直接改
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# 二进制：绝不转换
+*.png binary
+*.ico binary
+*.bmp binary
+*.exe binary
+*.pdb binary
+*.zip binary
+*.msi binary

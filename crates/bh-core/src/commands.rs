@@ -26,7 +26,7 @@ pub fn show_menu() {
     if hwnd.is_null() {
         return;
     }
-    if let Some(cmd) = menu::show(hwnd, autostart_on, tray_on, debug_on, &icon_style) {
+    if let Some(cmd) = unsafe { menu::show(hwnd, autostart_on, tray_on, debug_on, &icon_style) } {
         log::debug("menu", &format!("command {cmd}"));
         on_command(cmd);
     }
@@ -84,7 +84,7 @@ fn toggle_tray() {
             s.cfg.tray = s.tray_wanted;
             let _ = s.cfg.save(&s.cfg_path);
             if s.tray_wanted {
-                let mut t = tray::TrayIcon::new(s.hwnd, 1, "BatteryHub");
+                let mut t = tray::TrayIcon::new(s.hwnd, 1, crate::i18n::t("tray.title"));
                 t.add();
                 s.tray = Some(t);
             } else if let Some(mut t) = s.tray.take() {

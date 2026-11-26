@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: 检查 + 测试 + 构建（Windows / Rust 1.88）
+    runs-on: windows-latest
+    env:
+      CARGO_TERM_COLOR: always
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Rust 1.88.0（与 Cargo.toml 的 rust-version 对齐）
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.88.0
+          components: clippy
+
+      - name: 缓存 cargo 依赖与构建产物
+        uses: Swatinem/rust-cache@v2
+
+      - name: 行数门禁（单个 .rs 超过 400 行即失败）
+        shell: pwsh
+        run: ./tools/check-size.ps1
+
+      # 不加 -D warnings：clippy 默认 deny 的 lint（如 not_unsafe_ptr_arg_deref）仍然会让这一步失败，
+      # 而风格类 warning 作为 v1.0 之后的技术债逐步清理，不阻塞发布。
+      - name: clippy
+        run: cargo clippy --locked --all-targets
+
+      - name: 单元测试
+        run: cargo test --locked --all-targets
+
+      - name: 构建 release
+        run: cargo build --locked --release
+
+      - name: 无界面自检
+        shell: pwsh
+        run: ./target/release/batteryhub.exe --self-test
+
+      - name: 上传 exe
+        uses: actions/upload-artifact@v4
+        with:
+          name: batteryhub-exe
+          path: target/release/batteryhub.exe
+          if-no-files-found: error
+          retention-days: 14

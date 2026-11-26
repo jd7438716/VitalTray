@@ -78,7 +78,7 @@ impl Client {
     pub fn feature_index(&self, io: &mut dyn HidIo, feature: u16) -> Result<u8, DriverError> {
         let params = [(feature >> 8) as u8, (feature & 0xFF) as u8];
         let r = self.request(io, FEATURE_ROOT, 0x00, &params)?;
-        if r.params.len() < 1 || r.params[0] == 0 {
+        if r.params.is_empty() || r.params[0] == 0 {
             return Err(DriverError::Unsupported);
         }
         Ok(r.params[0])
