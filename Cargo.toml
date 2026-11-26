@@ -6,6 +6,7 @@ members = [
     "crates/bh-hid",
     "crates/bh-proto-logitech",
     "crates/bh-proto-rapoo",
+    "crates/bh-proto-razer",
     "crates/bh-app",
     "plugins/bh-plugin-mouse",
     "plugins/bh-plugin-keyboard",

@@ -9,9 +9,18 @@ pub fn once() -> i32 {
         return 0;
     }
     for r in &readings {
+        // 幽灵 = 从未成功上报过的通道（接收器常驻），面板不展示，排障时仍列出来。
+        let tag = if r.ghost { "幽灵" } else { "" };
         match &r.error {
-            Some(e) => println!("{:<24} {:<8} 读取失败: {e}", r.name, r.domain),
-            None => println!("{:<24} {:<8} {}%{}", r.name, r.domain, r.soc, if r.charging { " (充电中)" } else { "" }),
+            Some(e) => println!("{:<24} {:<8} {:<4} 读取失败: {e}", r.name, r.domain, tag),
+            None => println!(
+                "{:<24} {:<8} {:<4} {}%{}",
+                r.name,
+                r.domain,
+                tag,
+                r.soc,
+                if r.charging { " (充电中)" } else { "" }
+            ),
         }
     }
     0
@@ -43,7 +52,7 @@ pub fn dump_hid() -> i32 {
 
 /// 打印一次系统状态采样（排障：温度/GPU 是否可用）。
 pub fn sysmon_once() -> i32 {
-    crate::sysmon::spawn();
+    crate::sysmon::spawn_with_usage();
     std::thread::sleep(std::time::Duration::from_millis(1600));
     let s = crate::sysmon::latest();
     let m = crate::machine::info();
@@ -58,7 +67,14 @@ pub fn sysmon_once() -> i32 {
         println!("内存: {}%  {}/{} MB", mem.percent, mem.used_mb, mem.total_mb);
     }
     if let Some(d) = &s.disk {
-        println!("磁盘: {}: {}%  可用 {} GB / {} GB", d.letter, d.percent, d.free_mb / 1024, d.total_mb / 1024);
+        println!(
+            "磁盘: {}: {}%  可用 {} GB / {} GB  温度={}",
+            d.letter,
+            d.percent,
+            d.free_mb / 1024,
+            d.total_mb / 1024,
+            opt(d.temp_c, |v| format!("{v}°C"))
+        );
     }
     if s.gpus.is_empty() {
         println!("GPU:  未枚举到适配器（占用兜底={}）", opt(s.gpu_use, |v| format!("{v}%")));
@@ -68,6 +84,9 @@ pub fn sysmon_once() -> i32 {
     }
     if s.cpu_temp.is_none() {
         println!("提示：本机 ACPI 热区未上报温度，或该机型不提供。");
+    }
+    if s.disk.as_ref().is_some_and(|d| d.temp_c.is_none()) {
+        println!("提示：硬盘温度读不到（非 NVMe、或该驱动不支持 SMART 日志页）。");
     }
     0
 }

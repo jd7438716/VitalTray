@@ -1,0 +1,12 @@
+[package]
+name = "bh-proto-razer"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+bh-api.workspace = true
+
+[dev-dependencies]
+bh-api.workspace = true
+bh-hid = { path = "../bh-hid" }

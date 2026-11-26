@@ -72,6 +72,59 @@
 - 另一个坑：UpdateLayeredWindow 与 SetLayeredWindowAttributes 互斥；且 StretchBlt 的源必须是"选了位图的 DC"，不是位图句柄。
 - 验证方法：把窗口内容 PrintWindow 成 PNG，再与真实屏幕截图比对。
 
+## 2026-11-26 · M8 面板改「温度」：去占用、加硬盘温度
+
+- 需求澄清：用户在面板上看到 `CPU 23% · 78°C / GPU 16% · — / 内存 90% / 系统盘 67%` 这类行，明确说
+  「我是想显示温度来的，资源占用自然有任务管理器去处理」。→ 面板定位从「整机状态」收窄成「温度」。
+- 决策：
+  1. 三行系统信息全部只留温度：CPU 温度、GPU 温度、硬盘温度；占用百分比从面板移除
+     （采样层仍保留占用，`--sysmon` 排障时照旧打印，只是不再上屏）。
+  2. **内存行整行删掉**：板载 LPDDR5 没有温度传感器，而内存占用又明确不归这个面板——留着只能放占用率或 “—”，两种都是噪音。
+     顺带删了 `Icon::Memory` 与它的图标绘制（避免 dead_code）。
+- 新能力：**硬盘温度，依旧不需要管理员**。之前 PLAN 里写「磁盘 SMART 温度要管理员，暂不做」，这次实测推翻了：
+  - `Get-StorageReliabilityCounter` 这条路确实要管理员（普通用户 `MI RESULT 2 / Access denied`）——
+    所以一开始以为没戏；
+  - 但直接对设备发 `IOCTL_STORAGE_QUERY_PROPERTY` + `StorageDeviceProtocolSpecificProperty(50)` +
+    NVMe `SMART/Health` log page，句柄用 `\\.\C:` 或 `\\.\PhysicalDrive0`（`dwDesiredAccess = 0` 即可），
+    **普通用户能读到**：本机 4TB ZHITAI，返回 322 K = 49 °C，备件 100% / 磨损 4%，与盘况自洽。
+- 坑：
+  1. 输入缓冲必须带满 `STORAGE_PROPERTY_QUERY(8) + STORAGE_PROTOCOL_SPECIFIC_DATA(40)` = 48 字节，
+     只给 44 字节会 `ERROR_INVALID_PARAMETER(87)`（驱动按结构体大小校验）。
+  2. `ProtocolDataOffset` 的参照点各家实现不一致：本机回填 48，但实际数据在 `48 + 8`（相对 ProtocolSpecificData 起点）。
+     代码里对 `offset` 和 `offset + 8` 两个位置都试一遍，谁解出 273–400 K 谁算数。
+  3. 温度是开尔文、`0` 表示不支持；按 0.1 K 单位去解会把 322 K 读成 5 °C 之类的鬼数。
+  4. 每 2 秒敲一次盘没必要：SMART 温度 20 秒缓存一次。
+- 实测（本机）：CPU 88–100 °C（ACPI 热区，负载一上来就顶到 TjMax，红色是实情）、
+  硬盘 48–50 °C（绿）、GPU “—”（Intel Arc 核显驱动就是不上报）。
+- 截图验证：per-monitor aware 进程 + `FindWindowW("BatteryHubPanel")` 取窗口矩形 → `CopyFromScreen`，
+  和 M2 的结论一致（不 set DPI awareness 会截错区域）。
+- 门禁：64 个 `.rs` 全部 ≤400 行（`poller.rs` 337 行只报 warning）；66 个单测全绿（含 SMART 解码 2 个）；`--self-test` PASS。
+
+## 2026-11-26 · M8 续：温度链路的性能账
+
+- 先量再改。临时微基准（`#[ignore]` 测试，跑完即删，单独进程免得互相抢缓存锁）：
+
+  | 环节 | 单次耗时 | 是否每帧都做 |
+  |---|---|---|
+  | `GetSystemTimes`（CPU 占用） | 4–12 µs | 是 |
+  | `GlobalMemoryStatusEx`（内存） | 0.3 µs | 是 |
+  | GPU 温度（D3DKMT 开/查/关 × 2 适配器） | ~1 µs | 是 |
+  | PDH `PdhCollectQueryData`（只挂温度） | 87 µs | 是 |
+  | PDH `PdhCollectQueryData`（带 `\GPU Engine(*)`） | 306 µs | 曾经是 |
+  | `\GPU Engine(*)` 取值（523 个实例，两次取大小 + 逐个 parse LUID/engtype） | 595 µs | 曾经是 |
+  | `GetDiskFreeSpaceExW` | 41–57 µs | 曾经是 |
+  | NVMe SMART（一次 IOCTL） | **2.8 ms** | 20 秒一次 |
+
+- 结论：面板已经不显示占用率了，采样线程还在为它付 ~0.9 ms/帧 → 直接摘掉。
+  `Pdh::new(gpu_usage: bool)`：后台 `false`，`--sysmon` 走 `spawn_with_usage()` 仍然带；盘空间加 30 秒缓存
+  （SMART 仍 20 秒缓存，2.8 ms 不能每帧付）。
+- 效果：每帧 ~1.0 ms → ~0.2 ms；进程 CPU 0.16% → 0.05% 一个核（`Get-Process` 30 秒累计）。
+  缓存命中实测 0.1 µs，`--sysmon` 输出不变。**绝对值本来就小**，但“为不看的数据付钱”没必要。
+- 顺手找到真凶（与温度无关）：v1.0.0 的常驻进程 60 秒吃 59.9 秒 CPU，热线程是 capture 抓帧线程，
+  加 `--no-capture` 立刻掉到 0.08%——抓帧是「读不到数据也不睡」的空转。
+  另一条线同时在重写 capture（VID 白名单 + 空闲退避，默认不抓），改后整机实测 0.16%（抓帧关闭时）；
+  温度链路优化后 0.05%。结论：温度采样从来没吃过 CPU，别在它身上找性能问题。
+
 ## 2026-11-25 · M7 竖排状态面板
 
 - 需求转向：用户不再需要任务栏文本，要的是「除电量外还能看温度 / CPU / 内存 / GPU / 硬盘」，内容变多后用竖排右键菜单式面板承载，并要图标与品牌型号。
@@ -146,6 +199,48 @@
 - 验证：`cargo test` 46 项全绿、0 警告；`--self-test` PASS；`tools/check-size.ps1` 58 文件 0 超限；
   以 `--log-level debug` 实跑，日志里是 `[ui] refresh: BatteryHub`（不再带百分比）；
   `install.ps1` 重装到 `%LOCALAPPDATA%\Programs\BatteryHub` 并重启，新进程已接管托盘。
+
+## 2026-11-26 · 状态色：80 / 20 分级 + 充电 / 上次 / 无数据
+
+- 需求：状态栏图标想引入颜色——所有上报设备都 >80% 一个颜色、任何一台 <20% 一个颜色，
+  并把其它状态的颜色也研究补齐。
+- 调研：Windows 11 新电池图标（绿 = 充电且状态良好、黄 = 节能 ≤20%、红 = 危急、正常中性）、
+  Android 15 同一思路；WCAG 非文本对比度 3:1。结论：颜色只表达“要不要管”，正常档故意不上色。
+- 决策：六态 + 汇总优先级：
+  - 单设备：`Good >80%` 绿、`Normal 20–80%` 中性、`Low <= low_battery` 红、
+    `Charging 20–80% 且在充` 蓝、`Stale 只有上次` 灰、`Unknown 读不到` 灰。
+  - 托盘汇总：**低电 > 全部充足 > 充电 > 正常**；没有新鲜读数才退到上次 / 无数据。
+  - 低电优先于充电（15% 还在充也先红），充足优先于充电（都 >80% 时插电也保持绿）。
+- 两个口径修复：
+  1. 阈值从 15/40 改成 80 / `low_battery`（默认 20）——原来低电提醒响了，图标还是琥珀；
+  2. 托盘图标改读 `SystemUsesLightTheme`（原读 `AppsUseLightTheme`）——应用浅色 + 任务栏深色会画反。
+- 细节：低电整壳变红（16px 下填充只剩一两像素）；无数据画空心斜线 / “—”，不再冒充 0%；
+  面板设备行复用同一个 `status` 判定，充电行蓝字 + `⚡`。
+- 验证：`cargo test` 54 项全绿（含阈值 / 优先级 / 对比度 6 个）；clippy 0 error（warning 为既有技术债）；
+  60 个 `.rs` 0 超限；实机 79%⚡ → 面板蓝字 + 托盘蓝图标（`tmp/panel-status.png`、`tmp/tray-zoom.png`）；
+  6 状态 × 3 样式 × 明暗预览见 `docs/status-icons.png`；方案与备选见 `docs/status-colors.md`。
+
+## 2026-11-26 · 厂商协议注册表 + 修掉 100% CPU 空转
+
+- 两个问题一起收口：①`capture` 线程吃满一个 CPU 核；②"说好的插件化"只做到域，没做到厂商。
+- **空转事故（实测数据）**：进程 852 秒里单线程吃 842 秒（**99.6% 单核**）、`ReadFile` 累计 **3.28 亿次 ≈ 38.6 万次/秒**，
+  而 `capture/` 目录一帧都没落盘。根因是 `capture` 循环体**没有 sleep**，且把读错误用 `if let Ok(n)` 吞掉，
+  失败立即重试 → 死循环；即使 `handles` 为空也照样空转（结构性缺陷）。
+  - A/B 对照（同一 exe，20 秒窗口）：默认 `20.12s CPU / 28.4 万次读/秒` ↔ `--no-capture` `0.03s / 0 次`。
+  - 修复后同条件实测：capture 关 **0 秒 / 0 次读**；capture 开（白名单 `vids=093a`）**0.02s/12s ≈ 0.1% 单核**。
+  - 三条硬约束写进模块注释：循环必睡、失败即摘句柄并隔离 60s、只抓显式白名单 VID。
+- **抓帧改成 opt-in**：配置 `[capture] vids=09da,24ae` 才启动，默认一个句柄都不开（旧行为对全系统厂商集合"顺便"开句柄）。
+- **架构（ADR-0002）**：新增厂商协议注册表 `bh-core::registry` + `bh-api::protocol`（`VendorProtocol` / `Endpoint` / `Mode` / `DeviceTable`）。
+  宿主一次枚举产出快照统一下发；`VID → 协议` 索引 O(1)；加品牌 = 加一个 `bh-proto-*` crate + 注册表一行。
+  `bh-plugin-mouse` / `bh-plugin-keyboard` 里写死的 `0x046D` / `0x24AE` 分支全部删掉（两个 crate 也不再依赖协议库）。
+- **轮询改造**：一轮只枚举一次（旧实现每设备再枚举一次）；`std::thread::scope` 并行读（8.3s → 6.6s，且与设备数无关）；
+  `ProbeState` 退避 1/2/5 分钟，`立即刷新` 解除退避。
+- **幽灵行抑制**：判定依据从"枚举到了"改成"成功读到过"（`DeviceReading::ghost`）。雷柏接收器插着但两条通道都无帧时，
+  `--once` 会标「幽灵」，面板与托盘汇总都不再显示——用户插回接收器后确认"这次没有多出来的鼠标/键盘行"。
+- 雷蛇协议（`bh-proto-razer`）：90 字节 feature report / class `0x07` / cmd `0x80`·`0x84` / 字节 2..88 异或校验，6 个单测。
+  实测有线（1532:007a）不可读：MI_02 控制接口被厂商驱动占用（`0x1 函数不正确`），鼠标集合能写但一律回 `0x1F`；
+  且**有线模式电量本身无意义** → 只认无线 dongle（1532:007b），复核工具 `--example razer_probe`。
+- 门禁：`cargo test` 66 项全绿；clippy 0 error；64 个 `.rs` 0 超限（`poller.rs` 337 行进警告区）；`--once` 6.6s（旧 8.3s）。
 
 ## 待办
 

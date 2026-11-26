@@ -8,6 +8,10 @@
 
 #![forbid(unsafe_code)]
 
+pub mod protocol;
+
+pub use protocol::{DeviceTable, Endpoint, Mode, VendorProtocol};
+
 /// 插件元信息，用于日志、设置页与许可证展示。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PluginMeta {

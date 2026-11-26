@@ -9,6 +9,7 @@
 //! 本模块不依赖平台，只通过 bh_api::HidIo 说话，便于单测（见 tests 里的 MockIo）。
 
 use bh_api::{DriverError, HidIo, Reading};
+use std::time::{Duration, Instant};
 
 pub const FEATURE_ROOT: u8 = 0x00;
 pub const FEATURE_BATTERY_STATUS: u16 = 0x1000;
@@ -55,11 +56,29 @@ impl Client {
         function: u8,
         params: &[u8],
     ) -> Result<Response, DriverError> {
+        self.request_within(io, feature_index, function, params, Duration::from_millis(2400))
+    }
+
+    /// 带总预算的请求：每次 read 的超时取 `min(800ms, 剩余预算)`，预算用尽即返回 Timeout。
+    pub fn request_within(
+        &self,
+        io: &mut dyn HidIo,
+        feature_index: u8,
+        function: u8,
+        params: &[u8],
+        budget: Duration,
+    ) -> Result<Response, DriverError> {
+        let deadline = Instant::now() + budget;
         let frame = self.frame(feature_index, function, params);
         io.write(&frame)?;
         let mut buf = [0u8; 32];
         for _ in 0..3 {
-            let n = io.read_timeout(&mut buf, 800)?;
+            let now = Instant::now();
+            if now >= deadline {
+                break;
+            }
+            let ms = deadline.saturating_duration_since(now).as_millis().clamp(1, 800) as u32;
+            let n = io.read_timeout(&mut buf, ms)?;
             if n < 4 {
                 continue;
             }
@@ -86,8 +105,29 @@ impl Client {
 
     /// 读电池状态：SOC、充电标志、电压。
     pub fn battery(&self, io: &mut dyn HidIo) -> Result<Reading, DriverError> {
-        let idx = self.feature_index(io, FEATURE_BATTERY_STATUS)?;
-        let r = self.request(io, idx, 0x00, &[])?;
+        self.battery_within(io, Duration::from_millis(4800))
+    }
+
+    /// 带总预算地读电池状态。
+    pub fn battery_within(&self, io: &mut dyn HidIo, budget: Duration) -> Result<Reading, DriverError> {
+        let deadline = Instant::now() + budget;
+        let params = [(FEATURE_BATTERY_STATUS >> 8) as u8, (FEATURE_BATTERY_STATUS & 0xFF) as u8];
+        let r = self.request_within(
+            io,
+            FEATURE_ROOT,
+            0x00,
+            &params,
+            deadline.saturating_duration_since(Instant::now()),
+        )?;
+        if r.params.is_empty() || r.params[0] == 0 {
+            return Err(DriverError::Unsupported);
+        }
+        let idx = r.params[0];
+        let remain = deadline.saturating_duration_since(Instant::now());
+        if remain.is_zero() {
+            return Err(DriverError::Timeout);
+        }
+        let r = self.request_within(io, idx, 0x00, &[], remain)?;
         if r.params.len() < 2 {
             return Err(DriverError::Malformed);
         }
@@ -123,10 +163,20 @@ pub fn parse_response(buf: &[u8], device_index: u8) -> Option<Response> {
 
 /// 便捷入口：对 0xFF（直连）先试，再试 1..=6（接收器配对槽位）。
 pub fn read_battery(io: &mut dyn HidIo) -> Result<Reading, DriverError> {
+    read_battery_budget(io, Duration::from_secs(17))
+}
+
+/// 带总预算的入口：预算用尽立刻返回，绝不把宿主线程拖满。
+pub fn read_battery_budget(io: &mut dyn HidIo, budget: Duration) -> Result<Reading, DriverError> {
+    let deadline = Instant::now() + budget;
     let mut last = DriverError::Unsupported;
     for idx in [DEVICE_DIRECT, 1, 2, 3, 4, 5, 6] {
+        let remain = deadline.saturating_duration_since(Instant::now());
+        if remain.is_zero() {
+            return Err(DriverError::Timeout);
+        }
         let client = Client::new(idx);
-        match client.battery(io) {
+        match client.battery_within(io, remain) {
             Ok(mut r) => {
                 r.at_ms = bh_api::now_ms();
                 return Ok(r);
@@ -136,6 +186,40 @@ pub fn read_battery(io: &mut dyn HidIo) -> Result<Reading, DriverError> {
     }
     Err(last)
 }
+
+// ---- 协议插件入口：宿主在 bh-core::registry 里注册这一行即可 ----
+
+pub struct Proto;
+
+impl bh_api::VendorProtocol for Proto {
+    fn id(&self) -> &'static str {
+        "logitech"
+    }
+
+    fn vid(&self) -> u16 {
+        0x046D
+    }
+
+    fn endpoint(&self, device: &bh_api::DeviceInfo) -> Option<bh_api::Endpoint> {
+        // HID++ 的电量集合对鼠标/键盘通用；沿用历史行为，展示用鼠标图标。
+        if device.vendor_id == 0x046D && device.usage_page == 0xFF00 {
+            Some(bh_api::Endpoint { glyph: bh_api::Glyph::Mouse, mode: bh_api::Mode::Feature })
+        } else {
+            None
+        }
+    }
+
+    fn read(
+        &self,
+        _device: &bh_api::DeviceInfo,
+        io: &mut dyn HidIo,
+        budget: Duration,
+    ) -> Result<Reading, DriverError> {
+        read_battery_budget(io, budget)
+    }
+}
+
+pub static PROTO: Proto = Proto;
 
 #[cfg(test)]
 mod tests {

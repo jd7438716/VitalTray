@@ -122,9 +122,11 @@ pub fn run() -> i32 {
     crate::sysmon::spawn();
     unsafe { SetTimer(hwnd, 1, 1000, None) };
 
-    if !args.no_capture {
-        crate::capture::spawn(capture_dir);
-        log::info("capture", "watching unsupported vendor HID collections");
+    // 抓帧是逆向工具：只有配置里显式列了 VID 才启动（默认不抓，也不占任何句柄）。
+    let capture_vids = crate::capture::parse_watch(&cfg.capture_vids);
+    if !args.no_capture && !capture_vids.is_empty() {
+        crate::capture::spawn(capture_dir, capture_vids.clone());
+        log::info("capture", &format!("watching vendor HID collections: {capture_vids:?}"));
     }
 
     state::install(State {

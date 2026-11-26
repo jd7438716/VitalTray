@@ -1,7 +1,7 @@
 //! 键盘设备域插件。
 //!
-//! M1 支持：Logitech HID++ 2.0（直连或接收器首个应答的配对槽位）。
-//! 其他品牌在后续里程碑按协议库接入。
+//! 只负责"这类设备长什么样"（图标 / 将来贡献菜单）。**读电量不在这里**：
+//! 厂商协议由 `bh-proto-*` 实现、由宿主 `registry` 按 VID 分发（ADR-0002）。
 
 use bh_api::{
     DeviceDomain, DeviceInfo, DriverError, Glyph, Match, Plugin, PluginMeta, ReadContext, Reading,
@@ -21,28 +21,15 @@ impl DeviceDomain for Domain {
     }
 
     fn matches(&self, device: &DeviceInfo) -> Match {
-        // Logitech 的 HID++ 集合用 vendor page 0xFF00，是读电量最可靠的入口
-        if device.vendor_id == 0x046D && device.usage_page == 0xFF00 {
-            return Match::Strong;
-        }
-        // Rapoo 接收器的键盘通道
-        if device.vendor_id == bh_proto_rapoo::VENDOR_RAPOO
-            && device.usage_page == bh_proto_rapoo::USAGE_PAGE_VENDOR
-            && device.usage == 0x000E
-        {
-            return Match::Strong;
-        }
+        // 纯分类：标准键盘集合（Weak = 认得出，但不直接读）。
         if device.usage_page == 0x01 && device.usage == 0x06 {
-            return Match::Weak;
+            Match::Weak
+        } else {
+            Match::None
         }
-        Match::None
     }
 
-    fn read(&self, _device: &DeviceInfo, ctx: &mut ReadContext<'_>) -> Result<Reading, DriverError> {
-        let hid = ctx.hid.as_mut().ok_or(DriverError::Unsupported)?;
-        if _device.vendor_id == bh_proto_rapoo::VENDOR_RAPOO {
-            return bh_proto_rapoo::read_battery(&mut **hid, 2000);
-        }
-        bh_proto_logitech::read_battery(&mut **hid)
+    fn read(&self, _device: &DeviceInfo, _ctx: &mut ReadContext<'_>) -> Result<Reading, DriverError> {
+        Err(DriverError::Unsupported)
     }
 }

@@ -7,6 +7,7 @@ use crate::i18n;
 use crate::machine;
 use crate::poller::DeviceReading;
 use crate::state;
+use crate::status;
 use crate::sysmon::{self, Snapshot};
 use crate::util;
 use bh_api::Glyph;
@@ -15,7 +16,6 @@ use bh_api::Glyph;
 pub enum Icon {
     Cpu,
     Gpu,
-    Memory,
     Disk,
     Mouse,
     Keyboard,
@@ -26,11 +26,15 @@ pub enum Icon {
     Bluetooth,
 }
 
+/// 数值语义色。电池电量只有三档：充足绿、正常中性、低电红；充电中单独一档蓝；
+/// 上次/无数据用灰。系统温度继续用面板自己的绿/琥珀/红。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Tone {
     Green,
     Amber,
     Red,
+    Neutral,
+    Accent,
     Dim,
 }
 
@@ -61,7 +65,10 @@ pub struct Model {
 const MAX_DEVICES: usize = 6;
 
 pub fn build() -> Model {
-    let readings = state::with(|st| st.map(|s| s.readings.clone()).unwrap_or_default());
+    let (readings, low) = state::with(|st| match st {
+        Some(s) => (s.readings.clone(), s.cfg.low_battery),
+        None => (Vec::new(), status::DEFAULT_LOW),
+    });
     let snap = sysmon::latest();
     let info = machine::info();
     let brand = if info.vendor.is_empty() { "BatteryHub".to_string() } else { info.vendor.clone() };
@@ -71,7 +78,7 @@ pub fn build() -> Model {
         model,
         sections: vec![
             Section { title: i18n::t("panel.system"), rows: system_rows(&snap, info.cpu.as_str()) },
-            Section { title: i18n::t("panel.devices"), rows: device_rows(&readings) },
+            Section { title: i18n::t("panel.devices"), rows: device_rows(&readings, low) },
         ],
         updated: format!("{} {}", i18n::t("panel.updated"), util::clock()),
     }
@@ -83,8 +90,8 @@ fn system_rows(snap: &Snapshot, cpu_name: &str) -> Vec<Row> {
         icon: Icon::Cpu,
         title: i18n::t("panel.cpu").to_string(),
         detail: cpu_name.to_string(),
-        value: metric(snap.cpu_use, snap.cpu_temp),
-        tone: metric_tone(snap.cpu_use, snap.cpu_temp),
+        value: temp_text(snap.cpu_temp),
+        tone: temp_tone_of(snap.cpu_temp),
     });
 
     if snap.gpus.is_empty() {
@@ -92,8 +99,8 @@ fn system_rows(snap: &Snapshot, cpu_name: &str) -> Vec<Row> {
             icon: Icon::Gpu,
             title: i18n::t("panel.gpu").to_string(),
             detail: String::new(),
-            value: metric(snap.gpu_use, None),
-            tone: snap.gpu_use.map(usage_tone).unwrap_or(Tone::Dim),
+            value: temp_text(None),
+            tone: Tone::Dim,
         });
     } else {
         for gpu in snap.gpus.iter().take(2) {
@@ -101,22 +108,11 @@ fn system_rows(snap: &Snapshot, cpu_name: &str) -> Vec<Row> {
                 icon: Icon::Gpu,
                 title: i18n::t("panel.gpu").to_string(),
                 detail: gpu.name.clone(),
-                value: metric(gpu.use_percent, gpu.temp_c),
-                tone: metric_tone(gpu.use_percent, gpu.temp_c),
+                value: temp_text(gpu.temp_c),
+                tone: temp_tone_of(gpu.temp_c),
             });
         }
     }
-
-    rows.push(match &snap.mem {
-        Some(mem) => Row {
-            icon: Icon::Memory,
-            title: i18n::t("panel.mem").to_string(),
-            detail: format!("{:.1} / {:.1} GB", mem.used_mb as f64 / 1024.0, mem.total_mb as f64 / 1024.0),
-            value: format!("{}%", mem.percent),
-            tone: usage_tone(mem.percent),
-        },
-        None => missing_row(Icon::Memory, i18n::t("panel.mem")),
-    });
 
     rows.push(match &snap.disk {
         Some(disk) => Row {
@@ -128,8 +124,8 @@ fn system_rows(snap: &Snapshot, cpu_name: &str) -> Vec<Row> {
                 disk.free_mb as f64 / 1024.0,
                 disk.total_mb as f64 / 1024.0
             ),
-            value: format!("{}%", disk.percent),
-            tone: usage_tone(disk.percent),
+            value: temp_text(disk.temp_c),
+            tone: temp_tone_of(disk.temp_c),
         },
         None => missing_row(Icon::Disk, i18n::t("panel.disk")),
     });
@@ -140,8 +136,10 @@ fn missing_row(icon: Icon, title: &str) -> Row {
     Row { icon, title: title.to_string(), detail: String::new(), value: "—".into(), tone: Tone::Dim }
 }
 
-fn device_rows(readings: &[DeviceReading]) -> Vec<Row> {
-    if readings.is_empty() {
+fn device_rows(readings: &[DeviceReading], low: u8) -> Vec<Row> {
+    // 幽灵行抑制：接收器常驻但从未上报过的通道不占面板。
+    let live: Vec<&DeviceReading> = readings.iter().filter(|r| !r.ghost).collect();
+    if live.is_empty() {
         return vec![Row {
             icon: Icon::Bluetooth,
             title: i18n::t("panel.none").to_string(),
@@ -151,11 +149,10 @@ fn device_rows(readings: &[DeviceReading]) -> Vec<Row> {
         }];
     }
     let info = machine::info();
-    readings
-        .iter()
+    live.into_iter()
         .take(MAX_DEVICES)
         .map(|r| {
-            let (value, tone) = device_value(r.soc, r.charging, r.stale, r.error.as_deref());
+            let (value, tone) = device_value(r.soc, r.charging, r.stale, r.error.as_deref(), low);
             Row {
                 icon: icon_of(r.glyph),
                 title: i18n::device_label(r.glyph).to_string(),
@@ -186,7 +183,10 @@ fn icon_of(glyph: Glyph) -> Icon {
 }
 
 /// "85%" / "85% ⚡" / "待上报" / "—"，以及对应颜色语义。
-pub fn device_value(soc: u8, charging: bool, stale: bool, error: Option<&str>) -> (String, Tone) {
+///
+/// 电量色与托盘同口径：<= 低电阈值红、> 80% 绿、充电中蓝、正常中性；
+/// 上次读数 / 读不到用灰。
+pub fn device_value(soc: u8, charging: bool, stale: bool, error: Option<&str>, low: u8) -> (String, Tone) {
     if let Some(text) = error {
         if text.contains("等待") {
             return (i18n::t("panel.waiting").to_string(), Tone::Dim);
@@ -194,29 +194,32 @@ pub fn device_value(soc: u8, charging: bool, stale: bool, error: Option<&str>) -
         return ("—".into(), Tone::Dim);
     }
     if stale {
-        (format!("{}% · {}", soc, i18n::t("panel.stale")), Tone::Dim)
-    } else if charging {
-        (format!("{}% ⚡", soc), Tone::Amber)
-    } else {
-        (format!("{soc}%"), level_tone(soc))
+        return (format!("{}% · {}", soc, i18n::t("panel.stale")), Tone::Dim);
+    }
+    let tone = tone_of(status::state_of(soc, charging, false, low));
+    let value = if charging { format!("{soc}% ⚡") } else { format!("{soc}%") };
+    (value, tone)
+}
+
+/// 状态 → 面板色，和托盘图标共用 `status` 的判定。
+pub fn tone_of(state: status::State) -> Tone {
+    match state {
+        status::State::Good => Tone::Green,
+        status::State::Normal => Tone::Neutral,
+        status::State::Low => Tone::Red,
+        status::State::Charging => Tone::Accent,
+        status::State::Stale | status::State::Unknown => Tone::Dim,
     }
 }
 
-/// "23% · 78°C"：有占用有温度、只有其一、都没有。
-pub fn metric(usage: Option<u8>, temp: Option<u8>) -> String {
-    match (usage, temp) {
-        (Some(u), Some(t)) => format!("{u}% · {t}°C"),
-        (Some(u), None) => format!("{u}%"),
-        (None, Some(t)) => format!("{t}°C"),
-        (None, None) => "—".into(),
-    }
+/// "78°C"；温度拿不到就是 "—"（占用百分比不在这里，任务管理器负责那个）。
+pub fn temp_text(celsius: Option<u8>) -> String {
+    celsius.map(|t| format!("{t}°C")).unwrap_or_else(|| "—".into())
 }
 
-pub fn metric_tone(usage: Option<u8>, temp: Option<u8>) -> Tone {
-    if let Some(t) = temp {
-        return temp_tone(t);
-    }
-    usage.map(usage_tone).unwrap_or(Tone::Dim)
+/// 温度决定颜色；没有温度就是灰的。
+pub fn temp_tone_of(celsius: Option<u8>) -> Tone {
+    celsius.map(temp_tone).unwrap_or(Tone::Dim)
 }
 
 pub fn compact_detail(brand: Option<&str>, product: &str) -> String {
@@ -225,26 +228,6 @@ pub fn compact_detail(brand: Option<&str>, product: &str) -> String {
             format!("{b} · {product}")
         }
         _ => product.to_string(),
-    }
-}
-
-pub fn level_tone(soc: u8) -> Tone {
-    if soc <= 15 {
-        Tone::Red
-    } else if soc <= 40 {
-        Tone::Amber
-    } else {
-        Tone::Green
-    }
-}
-
-pub fn usage_tone(percent: u8) -> Tone {
-    if percent >= 90 {
-        Tone::Red
-    } else if percent >= 70 {
-        Tone::Amber
-    } else {
-        Tone::Green
     }
 }
 
@@ -263,25 +246,22 @@ mod tests {
     use super::*;
 
     #[test]
-    fn metric_text_variants() {
-        assert_eq!(metric(Some(23), Some(78)), "23% · 78°C");
-        assert_eq!(metric(Some(23), None), "23%");
-        assert_eq!(metric(None, Some(78)), "78°C");
-        assert_eq!(metric(None, None), "—");
+    fn temperature_text_variants() {
+        assert_eq!(temp_text(Some(78)), "78°C");
+        assert_eq!(temp_text(None), "—");
     }
 
     #[test]
     fn tones_follow_thresholds() {
-        assert_eq!(level_tone(10), Tone::Red);
-        assert_eq!(level_tone(30), Tone::Amber);
-        assert_eq!(level_tone(80), Tone::Green);
-        assert_eq!(usage_tone(95), Tone::Red);
-        assert_eq!(usage_tone(75), Tone::Amber);
-        assert_eq!(usage_tone(20), Tone::Green);
+        assert_eq!(tone_of(status::State::Low), Tone::Red);
+        assert_eq!(tone_of(status::State::Good), Tone::Green);
+        assert_eq!(tone_of(status::State::Normal), Tone::Neutral);
+        assert_eq!(tone_of(status::State::Charging), Tone::Accent);
+        assert_eq!(tone_of(status::State::Stale), Tone::Dim);
         assert_eq!(temp_tone(85), Tone::Red);
         assert_eq!(temp_tone(70), Tone::Amber);
         assert_eq!(temp_tone(40), Tone::Green);
-        assert_eq!(metric_tone(None, None), Tone::Dim);
+        assert_eq!(temp_tone_of(None), Tone::Dim);
     }
 
     #[test]
@@ -293,11 +273,19 @@ mod tests {
 
     #[test]
     fn device_value_states() {
-        assert_eq!(device_value(85, false, false, None).0, "85%");
-        assert_eq!(device_value(85, true, false, None).1, Tone::Amber);
-        assert_eq!(device_value(85, false, true, None).1, Tone::Dim);
-        assert_eq!(device_value(0, false, false, Some("打开失败")).0, "—");
-        assert_eq!(device_value(0, false, false, Some("等待设备上报（用一下设备）")).0, i18n::t("panel.waiting"));
+        // 85%：> 80，绿；充电中仍是绿（电量优先），但值里带 ⚡
+        assert_eq!(device_value(85, false, false, None, 20).0, "85%");
+        assert_eq!(device_value(85, false, false, None, 20).1, Tone::Green);
+        assert_eq!(device_value(85, true, false, None, 20).1, Tone::Green);
+        // 55% 充电中：中间档才显示蓝
+        assert_eq!(device_value(55, true, false, None, 20).1, Tone::Accent);
+        assert_eq!(device_value(55, false, false, None, 20).1, Tone::Neutral);
+        // 20% 及以下：红（充电中也红，直到充过阈值）
+        assert_eq!(device_value(20, false, false, None, 20).1, Tone::Red);
+        assert_eq!(device_value(15, true, false, None, 20).1, Tone::Red);
+        assert_eq!(device_value(85, false, true, None, 20).1, Tone::Dim);
+        assert_eq!(device_value(0, false, false, Some("打开失败"), 20).0, "—");
+        assert_eq!(device_value(0, false, false, Some("等待设备上报（用一下设备）"), 20).0, i18n::t("panel.waiting"));
     }
 
     #[test]
@@ -308,5 +296,32 @@ mod tests {
         assert_eq!(model.sections[0].title, i18n::t("panel.system"));
         assert_eq!(model.sections[1].title, i18n::t("panel.devices"));
         assert!(model.sections.iter().all(|s| s.rows.iter().all(|r| !r.title.is_empty())));
+    }
+
+    fn reading(soc: u8, ghost: bool) -> DeviceReading {
+        DeviceReading {
+            key: format!("k{soc}{ghost}"),
+            name: "Rapoo Gaming Device".into(),
+            domain: "mouse".into(),
+            glyph: Glyph::Mouse,
+            brand: Some("Rapoo".into()),
+            soc,
+            charging: false,
+            error: None,
+            stale: false,
+            ghost,
+        }
+    }
+
+    #[test]
+    fn ghost_channels_are_hidden_from_panel() {
+        // 接收器常驻但从未上报过的通道不占面板行（只有真读到过的才显示）。
+        let rows = device_rows(&[reading(0, true), reading(85, false)], 20);
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].value, "85%");
+        // 全是幽灵时退回“没有可读设备”提示，而不是空列表。
+        let only_ghost = device_rows(&[reading(0, true)], 20);
+        assert_eq!(only_ghost.len(), 1);
+        assert_eq!(only_ghost[0].title, i18n::t("panel.none"));
     }
 }

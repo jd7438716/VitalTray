@@ -126,7 +126,9 @@ fn tone_color(pal: &Palette, tone: Tone) -> u32 {
         Tone::Green => pal.green,
         Tone::Amber => pal.amber,
         Tone::Red => pal.red,
-        Tone::Dim => pal.subdued,
+        Tone::Neutral => pal.text,
+        Tone::Accent => pal.accent,
+        Tone::Dim => pal.stale,
     }
 }
 

@@ -7,6 +7,9 @@ license.workspace = true
 [dependencies]
 bh-api.workspace = true
 bh-hid = { path = "../bh-hid" }
+bh-proto-logitech = { path = "../bh-proto-logitech" }
+bh-proto-rapoo = { path = "../bh-proto-rapoo" }
+bh-proto-razer = { path = "../bh-proto-razer" }
 bh-plugin-mouse = { path = "../../plugins/bh-plugin-mouse" }
 bh-plugin-keyboard = { path = "../../plugins/bh-plugin-keyboard" }
 bh-plugin-laptop = { path = "../../plugins/bh-plugin-laptop" }
@@ -28,5 +31,6 @@ windows-sys = { version = "0.61", features = [
     "Win32_Storage_FileSystem",
     "Win32_System_Performance",
     "Win32_System_SystemInformation",
+    "Win32_System_IO",
     "Win32_UI_Input_KeyboardAndMouse",
 ] }

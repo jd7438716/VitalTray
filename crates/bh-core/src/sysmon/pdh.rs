@@ -24,8 +24,10 @@ pub struct Pdh {
 }
 
 impl Pdh {
-    /// 打开查询并挂上两类计数器；两个都挂不上时返回 None。
-    pub fn new() -> Option<Self> {
+    /// 打开查询并挂上计数器。`gpu_usage` = 是否要 `\GPU Engine(*)` 那一路：
+    /// 它有几百个实例，是这套采样里最贵的一段（`collect` + 取值约 0.8 ms/帧），
+    /// 面板只显示温度时没必要为它付钱。
+    pub fn new(gpu_usage: bool) -> Option<Self> {
         let mut query: PDH_HQUERY = std::ptr::null_mut();
         if unsafe { PdhOpenQueryW(std::ptr::null(), 0, &mut query) } != ERROR_SUCCESS {
             return None;
@@ -36,7 +38,7 @@ impl Pdh {
             thermal = add(query, r"\Thermal Zone Information(*)\Temperature");
             thermal_div = 1.0;
         }
-        let gpu = add(query, r"\GPU Engine(*)\Utilization Percentage");
+        let gpu = if gpu_usage { add(query, r"\GPU Engine(*)\Utilization Percentage") } else { None };
         if thermal.is_none() && gpu.is_none() {
             unsafe { PdhCloseQuery(query) };
             return None;

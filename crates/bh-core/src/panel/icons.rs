@@ -42,14 +42,6 @@ pub unsafe fn draw(dc: H, icon: Icon, x: i32, y: i32, size: i32, color: u32) {
             line(0.62, 0.78, 0.62, 0.90);
             line(0.18, 0.90, 0.82, 0.90);
         }
-        Icon::Memory => {
-            unsafe { round_stroke(dc, px(0.10), py(0.30), len(0.80), len(0.40), len(0.06), color, w) };
-            for i in 0..5 {
-                let t = 0.18 + i as f32 * 0.16;
-                line(t, 0.70, t, 0.84);
-            }
-            line(0.46, 0.70, 0.54, 0.70);
-        }
         Icon::Disk => {
             unsafe { round_stroke(dc, px(0.10), py(0.22), len(0.80), len(0.56), len(0.10), color, w) };
             line(0.10, 0.62, 0.90, 0.62);

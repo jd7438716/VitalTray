@@ -82,9 +82,49 @@ pub fn read_battery(io: &mut dyn HidIo, wait_ms: u32) -> Result<Reading, DriverE
     Err(DriverError::Timeout)
 }
 
+// ---- 协议插件入口 ----
+
+/// 接收器的键盘通道（鼠标通道是 [`USAGE_BATTERY`]）。
+pub const USAGE_KEYBOARD: u16 = 0x000E;
+
+pub struct Proto;
+
+impl bh_api::VendorProtocol for Proto {
+    fn id(&self) -> &'static str {
+        "rapoo"
+    }
+
+    fn vid(&self) -> u16 {
+        VENDOR_RAPOO
+    }
+
+    fn endpoint(&self, device: &bh_api::DeviceInfo) -> Option<bh_api::Endpoint> {
+        if device.vendor_id != VENDOR_RAPOO || device.usage_page != USAGE_PAGE_VENDOR {
+            return None;
+        }
+        let glyph = match device.usage {
+            USAGE_BATTERY => bh_api::Glyph::Mouse,
+            USAGE_KEYBOARD => bh_api::Glyph::Keyboard,
+            _ => return None,
+        };
+        // 一体式接收器：两条通道都静态存在，读不读得到由帧决定（宿主侧做退避 + 幽灵行抑制）。
+        Some(bh_api::Endpoint { glyph, mode: bh_api::Mode::Passive })
+    }
+
+    fn read(
+        &self,
+        _device: &bh_api::DeviceInfo,
+        io: &mut dyn HidIo,
+        budget: std::time::Duration,
+    ) -> Result<Reading, DriverError> {
+        read_battery(io, budget.as_millis().min(u32::MAX as u128) as u32)
+    }
+}
+
+pub static PROTO: Proto = Proto;
+
 #[cfg(test)]
-mod tests {
-    use super::*;
+mod tests {    use super::*;
 
     fn hex(s: &str) -> Vec<u8> {
         s.split_whitespace().map(|b| u8::from_str_radix(b, 16).unwrap()).collect()

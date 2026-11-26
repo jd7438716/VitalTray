@@ -9,6 +9,7 @@ mod gpu;
 mod kmt;
 mod mem;
 mod pdh;
+mod smart;
 
 use std::sync::{Mutex, OnceLock};
 use std::time::Duration;
@@ -46,10 +47,19 @@ pub fn latest() -> Snapshot {
 }
 
 pub fn spawn() -> std::thread::JoinHandle<()> {
+    spawn_sampler(false)
+}
+
+/// 排障用（`--sysmon`）：除温度外也采 GPU 占用。
+pub fn spawn_with_usage() -> std::thread::JoinHandle<()> {
+    spawn_sampler(true)
+}
+
+fn spawn_sampler(gpu_usage: bool) -> std::thread::JoinHandle<()> {
     std::thread::Builder::new()
         .name("bh-sysmon".into())
-        .spawn(|| {
-            let mut sampler = Sampler::new();
+        .spawn(move || {
+            let mut sampler = Sampler::new(gpu_usage);
             // 给速率型计数器一个采样间隔，首帧才有意义（见 pdh.rs）。
             std::thread::sleep(Duration::from_millis(600));
             loop {
@@ -70,11 +80,11 @@ struct Sampler {
 }
 
 impl Sampler {
-    fn new() -> Self {
+    fn new(gpu_usage: bool) -> Self {
         let mut cpu = cpu::CpuUsage::default();
         // 先采一帧当基准，首次展示就有占用值。
         let _ = cpu.sample();
-        Self { cpu, pdh: pdh::Pdh::new(), gpus: gpu::Adapters::default() }
+        Self { cpu, pdh: pdh::Pdh::new(gpu_usage), gpus: gpu::Adapters::default() }
     }
 
     fn sample(&mut self) -> Snapshot {

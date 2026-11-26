@@ -14,6 +14,8 @@ pub struct Config {
     pub start_minimized: bool,
     pub refresh_secs: u32,
     pub lang: String,
+    /// 抓帧白名单（VID 十六进制列表，如 `09da,24ae`）；空 = 不抓。
+    pub capture_vids: String,
 }
 
 impl Default for Config {
@@ -28,6 +30,7 @@ impl Default for Config {
             start_minimized: true,
             refresh_secs: 60,
             lang: "zh-CN".into(),
+            capture_vids: String::new(),
         }
     }
 }
@@ -60,12 +63,13 @@ impl Config {
                 cfg.lang = v.clone();
             }
         }
+        if let Some(v) = map.get("capture.vids") { cfg.capture_vids = v.clone(); }
         cfg
     }
 
     pub fn save(&self, path: &Path) -> std::io::Result<()> {
         let text = format!(
-            "; BatteryHub 配置（改完重启生效）\n[system]\nautostart={}\ntray={}\nhistory={}\nlow_battery={}\nlog_level={}\nstart_minimized={}\n\n[poll]\nrefresh_secs={}\n\n[ui]\nlang={}\nicon_style={}\n",
+            "; BatteryHub 配置（改完重启生效）\n[system]\nautostart={}\ntray={}\nhistory={}\nlow_battery={}\nlog_level={}\nstart_minimized={}\n\n[poll]\nrefresh_secs={}\n\n[ui]\nlang={}\nicon_style={}\n\n; 逆向用：只抓这些厂商(VID, 16 进制)的厂商页 HID 报文，留空则不抓\n[capture]\nvids={}\n",
             b(self.autostart),
             b(self.tray),
             b(self.history),
@@ -74,7 +78,8 @@ impl Config {
             b(self.start_minimized),
             self.refresh_secs,
             self.lang,
-            self.icon_style
+            self.icon_style,
+            self.capture_vids
         );
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent)?;

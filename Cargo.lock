@@ -23,6 +23,9 @@ dependencies = [
  "bh-plugin-keyboard",
  "bh-plugin-laptop",
  "bh-plugin-mouse",
+ "bh-proto-logitech",
+ "bh-proto-rapoo",
+ "bh-proto-razer",
  "windows-sys",
 ]
 
@@ -46,8 +49,6 @@ name = "bh-plugin-keyboard"
 version = "1.0.0"
 dependencies = [
  "bh-api",
- "bh-proto-logitech",
- "bh-proto-rapoo",
 ]
 
 [[package]]
@@ -62,8 +63,6 @@ name = "bh-plugin-mouse"
 version = "1.0.0"
 dependencies = [
  "bh-api",
- "bh-proto-logitech",
- "bh-proto-rapoo",
 ]
 
 [[package]]
@@ -78,6 +77,14 @@ name = "bh-proto-rapoo"
 version = "1.0.0"
 dependencies = [
  "bh-api",
+]
+
+[[package]]
+name = "bh-proto-razer"
+version = "1.0.0"
+dependencies = [
+ "bh-api",
+ "bh-hid",
 ]
 
 [[package]]

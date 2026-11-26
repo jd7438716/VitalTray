@@ -3,6 +3,7 @@
 use crate::i18n;
 use crate::log;
 use crate::state::{self, State};
+use crate::status;
 
 pub fn on_timer() {
     let mut latest = None;
@@ -53,19 +54,16 @@ fn tip_text() -> String {
     i18n::t("tray.title").to_string()
 }
 
-/// 把当前读数写成托盘提示（固定标题）与托盘图标。
+/// 把当前读数汇总成“一个状态 + 一个电量”，写成托盘提示（固定标题）与托盘图标。
+///
+/// 颜色口径见 `status`：低电红 > 全部充足绿 > 充电蓝 > 正常中性；
+/// 没有新鲜读数时才显示灰（上次 / 无数据）。
 pub fn refresh() {
-    let (tip, worst) = state::with(|st| {
+    let (tip, agg) = state::with(|st| {
         let Some(st) = st else {
-            return (String::new(), None);
+            return (String::new(), status::Aggregate { state: status::State::Unknown, percent: None });
         };
-        let worst = st
-            .readings
-            .iter()
-            .filter(|r| r.error.is_none())
-            .min_by_key(|r| r.soc)
-            .map(|r| (r.soc, r.charging));
-        (tip_text(), worst)
+        (tip_text(), status::aggregate(&st.readings, st.cfg.low_battery))
     });
 
     if tip.is_empty() {
@@ -75,11 +73,9 @@ pub fn refresh() {
         let Some(st) = st else { return };
         if let Some(t) = st.tray.as_mut() {
             t.set_tip(&tip);
-            if let Some((soc, charging)) = worst {
-                let style = crate::tray::icons::Style::parse(&st.cfg.icon_style);
-                t.set_icon(crate::tray::icons::render(soc, charging, style));
-            }
+            let style = crate::tray::icons::Style::parse(&st.cfg.icon_style);
+            t.set_icon(crate::tray::icons::render(&agg, style));
         }
     });
-    log::debug("ui", &format!("refresh: {tip}"));
+    log::debug("ui", &format!("refresh: {tip} [{} {:?}]", agg.state.name(), agg.percent));
 }
