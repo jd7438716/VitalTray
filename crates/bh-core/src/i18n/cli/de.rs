@@ -13,6 +13,7 @@ pub static TABLE: &[(&str, &str)] = &[
     ("cli.opt.dump", "--dump             HID-Geräte auflisten (VID/PID/usage), dann beenden"),
     ("cli.opt.sysmon", "--sysmon           CPU/RAM/Datenträger/GPU/Temperaturen einmal messen, dann beenden"),
     ("cli.opt.panel", "--panel            Statuspanel sofort am Mauszeiger zeigen (Debug/Screenshot)"),
+    ("cli.opt.minimized", "--minimized        nur im Infobereich starten, kein Panel (für Autostart)"),
     ("cli.opt.watch", "--watch <vid:pid>  HID-Eingaben dieses Geräts nur lesend mithören (Standard 180 s)"),
     ("cli.opt.watch_for", "--watch-for <sec>  Mithördauer, Standard 180"),
     ("cli.opt.watch_out", "--watch-out <file> Mithörprotokoll zusätzlich in eine Datei schreiben"),

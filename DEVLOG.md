@@ -344,6 +344,36 @@
 - 验证：`check-fonts.ps1` 0 命中；`check-cleanroom` / `gen-notices -Check` / `check-size` / `check-exe` /
   `cargo test` / `--self-test` 全绿（本 commit 前实跑，见 summary）。
 
+## 2026-11-26 · 打开只驻留托盘（不再弹面板）
+
+- 反馈（原话）：「打开的时候直接最小化到任务栏图标，别跳出个菜单，挡住整个页面」。
+- 现象与根因 —— 两条独立的「打开 = 弹面板」：
+  1. 用 `--panel` 启动（调试/截图）时，608×820 的面板直接盖在屏幕中间；
+  2. **第二次双击 exe** 时 `WAKE_MESSAGE` 一律 `panel::show()`，README 里还写着「把已经在跑的那个叫出来」。
+- 关键事实：`--minimized` 早就写进了自启项（`autostart.rs` → `"...vitaltray.exe" --minimized`）与
+  `tools/install.ps1`，但 `Args::parse` 从来没有这个分支——一个只写不读的「半成品开关」；
+  `[system] start_minimized` 同理（`Config` 有字段、`save` 会写，但没人读它来做决定）。
+- 决策：
+  - `--minimized` 真正生效 = 「启动后只驻留托盘」；`[system] start_minimized` 默认 1，改成 0 才
+    「启动就弹面板」；`--panel` 优先级最高（调试/截图要靠它）。
+  - 唤醒路径改看托盘图标在不在：在 → 什么都不弹，只记一行日志；不在 → 才弹面板
+    （托盘是唯一的菜单入口，关掉之后这条是唯一回得来的路）。
+  - 面板本身的尺寸与交互不改：左键还是看信息，只是「打开」不再等于「弹面板」。
+- 实测（本机，新二进制 SHA256 `7AA347D1…C93`）：
+
+  | 场景 | 日志 | 面板 |
+  |---|---|---|
+  | 无参数启动 | `start minimized: tray only, no panel` | 不创建 |
+  | 第二次启动（已在跑） | `wake from second instance: already in tray, stay minimized` | 不创建 |
+  | `--panel` | `[panel] open at …` | 弹出（调试开关未退化） |
+  | `start_minimized=0` | `[panel] open at …` | 弹出（配置生效） |
+  | `start_minimized=0` + `--minimized` | `start minimized: tray only, no panel` | 不创建（命令行压过配置） |
+
+  另：`--help` 10 种语言都多出 `--minimized` 一行；`cargo test --workspace` 全绿（新增 2 个 CLI 解析单测）；
+  `check-size` 130 文件 0 超限 0 警告，`check-readme` 双语通过。
+- 部署：`tools/install.ps1` 重装同版本二进制（不 bump 版本、不打 tag），安装目录与构建产物 SHA256 一致；
+  自启项仍是 `"...vitaltray.exe" --minimized` —— 现在这个参数终于有人解析了。
+
 ## 待办
 
 - 多显示器任务栏（当前只挂主任务栏）。

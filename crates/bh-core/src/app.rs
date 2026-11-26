@@ -129,6 +129,12 @@ pub fn run() -> i32 {
 
     let monitor = crate::monitor::Monitor::new(&dir.join("history"));
     let low_battery = cfg.low_battery;
+    // 启动时要不要把面板弹出来：默认不弹（只留托盘图标）。
+    // * `--panel`：调试/截图开关，显式要面板，优先；
+    // * `--minimized`：安装脚本与开机自启都带它，保证开机时不会被一块面板挡住屏幕；
+    // * `[system] start_minimized=0`：配置里主动改成“启动就弹面板”（只影响手动启动）。
+    let start_minimized = args.minimized || cfg.start_minimized;
+    let show_panel_at_start = args.panel || !start_minimized;
     let (tx, rx) = std::sync::mpsc::channel::<Vec<DeviceReading>>();
     poller::spawn(cfg.refresh_secs, tx);
     crate::sysmon::spawn();
@@ -158,8 +164,10 @@ pub fn run() -> i32 {
 
     log::info("app", &format!("plugins: {:?}", plugins::describe()));
     runtime::refresh();
-    if args.panel {
+    if show_panel_at_start {
         let _ = crate::panel::show();
+    } else {
+        log::info("app", "start minimized: tray only, no panel");
     }
     window::message_loop();
     log::info("app", "exit");
@@ -180,8 +188,16 @@ unsafe extern "system" fn wndproc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: 
     }
     match msg {
         window::WAKE_MESSAGE => {
-            log::info("app", "wake from second instance: show panel");
-            crate::panel::show();
+            // 再次打开 exe（双击 / 开始菜单）= “把它叫回来”，不是“打开一块面板”：
+            // 托盘图标本来就在，弹面板只会挡住用户正在看的屏幕。所以默认什么都不显示。
+            // 唯一例外：托盘图标被用户在菜单里关掉了 —— 那时面板是拿回菜单的唯一入口。
+            let in_tray = state::with(|st| st.and_then(|s| s.tray.as_ref()).is_some());
+            if in_tray {
+                log::info("app", "wake from second instance: already in tray, stay minimized");
+            } else {
+                log::info("app", "wake from second instance: no tray icon, show panel");
+                crate::panel::show();
+            }
             0
         }
         WM_DESTROY => {

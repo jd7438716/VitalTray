@@ -56,14 +56,15 @@ Rust + 原生 Win32，零第三方运行时，MIT。
 
 ```powershell
 cargo build --release
-.\target\release\vitaltray.exe             # 启动（托盘出现图标）
+.\target\release\vitaltray.exe             # 启动（只出现托盘图标，不弹面板）
+.\target\release\vitaltray.exe --minimized # 同上，显式要求“最小化到托盘”（开机自启用的就是这条）
 .\target\release\vitaltray.exe --panel     # 启动后直接在鼠标位置弹出面板（调试/截图）
 .\target\release\vitaltray.exe --sysmon    # 采样一次温度（顺带打印占用/空间，排障用）并打印
 .\target\release\vitaltray.exe --self-test # 无界面自检
 ```
 
 常用命令：`--once`（读一次电量）、`--dump`（列 HID 设备）、`--watch vid:pid`（只读抓报文）、
-`--sysmon`（系统状态采样）、`--panel`（直接弹面板）。
+`--sysmon`（系统状态采样）、`--panel`（直接弹面板）、`--minimized`（只驻留托盘，不弹面板）。
 
 ## 交互
 
@@ -76,9 +77,10 @@ cargo build --release
 - **鼠标悬停托盘图标** → 提示只显示标题 `VitalTray`；电量、续航都在左键面板里，提示不重复数字。
 - 面板里**只有信息、没有按钮**：点任意处、按 `Esc`、再点一次托盘 → 收起；
   在面板上按右键也是收起面板、把菜单交出来（左键=看，右键=做，两边不混）。
+- **打开 = 只在托盘里**：双击 exe / 开始菜单启动都直接进托盘，不弹面板、不闪窗，不会挡住屏幕上的东西。
+  第二次双击 exe **不会**再起一个进程，已经在跑的那个也不弹面板（托盘图标就在那儿，左键即看）。
 - **托盘图标是唯一的菜单入口**：菜单里关掉它之后，再运行一次 `vitaltray.exe` 就会弹出面板，
   在面板上右键即可把菜单拿回来（不用去改配置文件）。
-- 第二次双击 exe **不会**再起一个进程，而是把已经在跑的那个叫出来（以前是静默退出、看起来像没反应）。
 - **任务栏文本已移除**：按用户反馈，不再往任务栏里塞文字；所有信息进面板。
 
 ## 语言
@@ -167,9 +169,11 @@ impl DeviceDomain for Domain {
 - 自启：默认写 `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`，不碰 HKLM、不要管理员；
   菜单里可随时开关；`--no-autostart` 表示本次不改注册表。
 - 面板自动读取当前系统明暗主题；多显示器时按鼠标所在显示器的 DPI 与工作区摆位。
+- 启动行为：`[system] start_minimized=1`（默认）＝启动后只驻留托盘；改成 `0` 才是“启动就把面板弹出来”。
+  `--minimized` 强制最小化（开机自启项带的就是它），`--panel` 是调试用的强制弹出。
 - 界面语言：`[ui] lang=auto`（默认，跟随 Windows）或 `en` / `zh-CN` / `zh-TW` / `ja` / `ko` / `de` / `fr` / `es` / `ru` / `pt-BR`；
   托盘右键 → 语言 也能改（立即生效），见 [docs/i18n.md](docs/i18n.md)。
-- 命令行：`--no-tray`、`--no-capture`、`--portable`、`--config <path>`、`--debug`、`--self-test`、`--sysmon`、`--panel`。
+- 命令行：`--no-tray`、`--no-capture`、`--portable`、`--config <path>`、`--debug`、`--self-test`、`--sysmon`、`--panel`、`--minimized`。
 
 ## 日志（开发日志功能）
 

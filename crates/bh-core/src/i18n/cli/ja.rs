@@ -13,6 +13,7 @@ pub static TABLE: &[(&str, &str)] = &[
     ("cli.opt.dump", "--dump             HID デバイス一覧（VID/PID/usage）を表示して終了"),
     ("cli.opt.sysmon", "--sysmon           CPU/メモリ/ディスク/GPU/温度を一度サンプリングして終了"),
     ("cli.opt.panel", "--panel            起動直後にカーソル位置へ状態パネルを表示（デバッグ/撮影）"),
+    ("cli.opt.minimized", "--minimized        起動後はトレイ常駐のみ（パネルを出さない／自動起動用）"),
     ("cli.opt.watch", "--watch <vid:pid>  そのデバイスの HID 入力を読み取り専用で監視（既定 180 秒）"),
     ("cli.opt.watch_for", "--watch-for <sec>  監視する長さ、既定 180"),
     ("cli.opt.watch_out", "--watch-out <file> 監視結果をファイルにも書き出す"),

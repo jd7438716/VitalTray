@@ -13,6 +13,7 @@ pub static TABLE: &[(&str, &str)] = &[
     ("cli.opt.dump", "--dump             lister les appareils HID (VID/PID/usage), puis quitter"),
     ("cli.opt.sysmon", "--sysmon           échantillonner CPU/RAM/disque/GPU/températures, puis quitter"),
     ("cli.opt.panel", "--panel            afficher le panneau au curseur au démarrage (débogage/capture)"),
+    ("cli.opt.minimized", "--minimized        démarrer réduit dans la zone de notification, sans panneau (autostart)"),
     ("cli.opt.watch", "--watch <vid:pid>  écouter les entrées HID de cet appareil (180 s par défaut)"),
     ("cli.opt.watch_for", "--watch-for <sec>  durée d'écoute, 180 par défaut"),
     ("cli.opt.watch_out", "--watch-out <file> écrire aussi la capture dans un fichier"),

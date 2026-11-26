@@ -12,6 +12,9 @@ pub struct Args {
     pub dump: bool,
     pub sysmon: bool,
     pub panel: bool,
+    /// 启动后只驻留托盘、不弹面板。开机自启与安装脚本都传它，
+    /// 所以“开机时屏幕上突然一块面板”这条路是关死的。
+    pub minimized: bool,
     pub no_capture: bool,
     pub capture_report: bool,
     pub watch: Option<String>,
@@ -40,6 +43,7 @@ impl Args {
                 "--dump" => a.dump = true,
                 "--sysmon" => a.sysmon = true,
                 "--panel" => a.panel = true,
+                "--minimized" => a.minimized = true,
                 "--no-capture" => a.no_capture = true,
                 "--capture-report" => a.capture_report = true,
                 "--watch" => a.watch = rest.next(),
@@ -70,6 +74,7 @@ impl Args {
             "cli.opt.dump",
             "cli.opt.sysmon",
             "cli.opt.panel",
+            "cli.opt.minimized",
             "cli.opt.watch",
             "cli.opt.watch_for",
             "cli.opt.watch_out",
@@ -85,5 +90,32 @@ impl Args {
             s.push('\n');
         }
         s
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn parse(args: &[&str]) -> Args {
+        Args::parse(args.iter().map(|s| s.to_string()))
+    }
+
+    #[test]
+    fn minimized_and_panel_are_independent_flags() {
+        let a = parse(&["--minimized"]);
+        assert!(a.minimized && !a.panel, "--minimized 只该置 minimized");
+        let b = parse(&["--panel"]);
+        assert!(b.panel && !b.minimized, "--panel 只该置 panel");
+        // 两个都给时都读进来；谁优先由 app 决定（--panel 是调试开关，优先弹）
+        let c = parse(&["--minimized", "--panel"]);
+        assert!(c.minimized && c.panel);
+    }
+
+    #[test]
+    fn unknown_args_are_ignored_not_fatal() {
+        let a = parse(&["--nonsense", "--once"]);
+        assert!(a.once);
+        assert!(!a.minimized);
     }
 }

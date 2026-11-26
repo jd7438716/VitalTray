@@ -61,14 +61,15 @@ Portable mode (`--portable`) is not migrated across directories — just copy `V
 
 ```powershell
 cargo build --release
-.\target\release\vitaltray.exe             # start (tray icon appears)
+.\target\release\vitaltray.exe             # start (tray icon only, no panel)
+.\target\release\vitaltray.exe --minimized # same, explicitly "minimize to tray" (what autostart uses)
 .\target\release\vitaltray.exe --panel     # pop the panel at the cursor (debug/screenshots)
 .\target\release\vitaltray.exe --sysmon    # sample temperatures once (also prints load/space) and exit
 .\target\release\vitaltray.exe --self-test # headless self-check
 ```
 
 Handy flags: `--once` (read battery once), `--dump` (list HID devices), `--watch vid:pid` (read-only packet capture),
-`--sysmon` (system sampling), `--panel` (pop the panel directly).
+`--sysmon` (system sampling), `--panel` (pop the panel directly), `--minimized` (stay in the tray, no panel).
 
 ## Interaction
 
@@ -83,10 +84,12 @@ Handy flags: `--once` (read battery once), `--dump` (list HID devices), `--watch
   not in the tooltip.
 - The panel has **information only, no buttons**: click anywhere, press `Esc`, or click the tray again to
   dismiss it. Right-clicking the panel also dismisses it and hands over the menu (left = look, right = act).
+- **Opening it just puts it in the tray**: double-clicking the exe or launching it from the Start menu goes
+  straight to the tray — no panel, no window flash, nothing covering your screen. A second double-click
+  **does not** start a second process, and the running instance does not pop the panel either
+  (the tray icon is right there — left-click it to look).
 - **The tray icon is the only menu entry**: if you turn it off from the menu, running `vitaltray.exe` again
   pops the panel; right-clicking the panel brings the menu back (no config editing required).
-- Double-clicking the exe **does not** start a second process — it wakes the running instance
-  (it used to exit silently and look broken).
 - **Taskbar text was removed**: per user feedback the tool no longer stuffs text into the taskbar;
   everything lives in the panel.
 
@@ -185,11 +188,14 @@ Vendor protocols are not plugins; they live in protocol crates shared by several
   toggle it from the menu at any time; `--no-autostart` means "don't touch the registry this run".
 - The panel follows the current system light/dark theme; on multi-monitor setups it uses the DPI and work
   area of the monitor under the cursor.
+- Startup behaviour: `[system] start_minimized=1` (default) = tray icon only; set it to `0` to have the
+  panel open at launch. `--minimized` forces the tray-only start (that is what the autostart entry uses),
+  `--panel` is the debug switch that forces the panel.
 - UI language: `[ui] lang=auto` (default, follows Windows) or `en` / `zh-CN` / `zh-TW` / `ja` / `ko` /
   `de` / `fr` / `es` / `ru` / `pt-BR`; tray right-click → Language also works (immediately effective),
   see [docs/i18n.md](docs/i18n.md).
 - Command line: `--no-tray`, `--no-capture`, `--portable`, `--config <path>`, `--debug`, `--self-test`,
-  `--sysmon`, `--panel`.
+  `--sysmon`, `--panel`, `--minimized`.
 
 ## Logging
 

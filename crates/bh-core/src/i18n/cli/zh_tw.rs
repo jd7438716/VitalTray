@@ -13,6 +13,7 @@ pub static TABLE: &[(&str, &str)] = &[
     ("cli.opt.dump", "--dump             列出所有 HID 裝置（VID/PID/usage）後結束"),
     ("cli.opt.sysmon", "--sysmon           取樣一次 CPU/記憶體/磁碟/GPU/溫度並印出後結束"),
     ("cli.opt.panel", "--panel            啟動後立即在滑鼠位置彈出狀態面板（偵錯/截圖）"),
+    ("cli.opt.minimized", "--minimized        啟動後只常駐托盤，不彈面板（開機自啟用這個參數）"),
     ("cli.opt.watch", "--watch <vid:pid>  唯讀監聽該裝置的 HID 輸入封包（預設 180 秒）"),
     ("cli.opt.watch_for", "--watch-for <sec>  監聽長度，預設 180"),
     ("cli.opt.watch_out", "--watch-out <file> 把監聽結果同時寫入檔案"),
