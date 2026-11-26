@@ -41,7 +41,7 @@ it (GUI subsystem — no console window flashes).
 - **SmartScreen**: the exe is unsigned, so the first run may show “Windows protected your PC” →
   More info → Run anyway. If that bothers you, verify the SHA256 above.
 
-Current version: **1.1.1** (see [CHANGELOG.md](CHANGELOG.md)).
+Current version: **1.2.0** (see [CHANGELOG.md](CHANGELOG.md)).
 
 ## Upgrading from BatteryHub
 
@@ -225,7 +225,7 @@ Vendor protocols are not plugins; they live in protocol crates shared by several
 - **M6 ✅** levelled development logging
 - **M7 ✅** vertical status panel: CPU/GPU/memory/disk/temperatures, brand and model, icons, menu-driven interaction
 - **v1.0.0 ✅** first public release (2026-11-26), see [CHANGELOG.md](CHANGELOG.md)
-- **v1.2.0 (unreleased)** rename to VitalTray + automatic migration of config/autostart
+- **v1.2.0 ✅** (2026-11-26) 10 languages + rename to VitalTray + automatic migration of config/autostart
   ([ADR 0004](docs/adr/0004-rename-to-vitaltray.md))
 - **TODO**: Logitech receiver multi-device pairing table; calibration wizard UI; disk SMART temperature
   (needs admin, deliberately not done).
