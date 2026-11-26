@@ -25,6 +25,8 @@ pub fn run() -> i32 {
     let args = Args::parse(std::env::args().skip(1));
     let dir = paths::data_dir(args.portable);
     let _ = paths::ensure_dir(&dir);
+    // 改名迁移：把旧 %LOCALAPPDATA%\BatteryHub\config.ini 复制过来（必须在 Config::load 之前）。
+    let migrated_from = paths::migrate_legacy_config(&dir);
     let cfg_path = args
         .config
         .as_ref()
@@ -38,7 +40,7 @@ pub fn run() -> i32 {
         return 0;
     }
     if args.version {
-        println!("BatteryHub {VERSION}");
+        println!("VitalTray {VERSION}");
         return 0;
     }
     if args.self_test {
@@ -73,9 +75,16 @@ pub fn run() -> i32 {
         .unwrap_or(Level::Info);
     log::init(paths::log_file(&dir), level);
     log::info("app", &format!("start v{VERSION} portable={}", args.portable));
+    if let Some(old) = &migrated_from {
+        // 只在"刚刚发生过迁移"时记一行，之后每次启动都不再重复。
+        log::info(
+            "app",
+            &format!("migrated config from legacy dir {}", old.display()),
+        );
+    }
     log::debug("app", &format!("config={} log_level={}", cfg_path.display(), level.name()));
 
-    let _guard = match single_instance::acquire("Local\\BatteryHub.SingleInstance") {
+    let _guard = match single_instance::acquire("Local\\VitalTray.SingleInstance") {
         Some(g) => g,
         None => {
             // 已经有一个实例在跑：把面板叫出来再退出，别让“双击没反应”变成死胡同。
@@ -85,7 +94,7 @@ pub fn run() -> i32 {
         }
     };
 
-    let exe = std::env::current_exe().unwrap_or_else(|_| PathBuf::from("batteryhub.exe"));
+    let exe = std::env::current_exe().unwrap_or_else(|_| PathBuf::from("vitaltray.exe"));
     if !cfg_path.exists() {
         let _ = cfg.save(&cfg_path);
         log::info("config", "default written");

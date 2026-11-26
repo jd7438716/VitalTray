@@ -209,6 +209,6 @@ fn draw_footer(dc: H, l: &Layout, m: &Model, pal: &Palette, f: &Fonts, b: &dyn F
         let mut left = RECT { left: b(l.pad), top, right: b(l.width / 2), bottom: top + b(l.footer_h) };
         draw_text(dc, &m.updated, &mut left, f.footer, pal.subdued, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
         let mut right = RECT { left: b(l.width / 2), top, right: b(l.width - l.pad), bottom: top + b(l.footer_h) };
-        draw_text(dc, &format!("BatteryHub v{}", crate::VERSION), &mut right, f.footer, pal.subdued, DT_RIGHT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
+        draw_text(dc, &format!("VitalTray v{}", crate::VERSION), &mut right, f.footer, pal.subdued, DT_RIGHT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
     }
 }

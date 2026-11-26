@@ -168,7 +168,7 @@ unsafe fn draw(dc: H, size: i32, agg: &Aggregate, style: Style, dark: bool, mono
 
     match style {
         Style::Battery => {
-            // 竖向电池，与应用图标（`assets/batteryhub.ico`）同一套比例：
+            // 竖向电池，与应用图标（`assets/vitaltray.ico`）同一套比例：
             // 壳宽 46%、高 62%、壳厚 5.5%、触点宽 22%。电量从底部往上填。
             let body_x = size * 27 / 100;
             let body_y = size * 23 / 100;

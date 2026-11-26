@@ -1,7 +1,7 @@
 //! 日本語。
 
 pub static TABLE: &[(&str, &str)] = &[
-    ("cli.usage", "使い方: batteryhub.exe [オプション]"),
+    ("cli.usage", "使い方: vitaltray.exe [オプション]"),
     ("cli.opt.no_tray", "--no-tray          トレイアイコンを作らない（デバッグ用）"),
     ("cli.opt.no_autostart", "--no-autostart     今回の起動では自動起動の設定を変更しない"),
     ("cli.opt.portable", "--portable         ポータブルモード：設定とログを exe と同じ場所に置く"),

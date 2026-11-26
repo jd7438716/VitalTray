@@ -1,4 +1,4 @@
-//! BatteryHub 插件 API。
+//! VitalTray 插件 API。
 //!
 //! 设计约束：
 //! * 本 crate 不依赖任何平台 API，只依赖 std。以后要做 sidecar / WASM 插件也不用改。

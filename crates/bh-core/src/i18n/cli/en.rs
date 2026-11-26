@@ -1,7 +1,7 @@
 ﻿//! English — the fallback table for command-line output.
 
 pub static TABLE: &[(&str, &str)] = &[
-    ("cli.usage", "Usage: batteryhub.exe [options]"),
+    ("cli.usage", "Usage: vitaltray.exe [options]"),
     ("cli.opt.no_tray", "--no-tray          no tray icon (debugging)"),
     ("cli.opt.no_autostart", "--no-autostart     this run leaves the autostart entry alone"),
     ("cli.opt.portable", "--portable         keep config and logs next to the exe"),

@@ -1,6 +1,6 @@
 ﻿# 第三方许可清单生成器：生成 / 校验 THIRD-PARTY-NOTICES.txt。
 #
-# 为什么需要：batteryhub.exe 静态链了 windows-sys、hidapi（含其内嵌的 HIDAPI C 库）等第三方组件。
+# 为什么需要：vitaltray.exe 静态链了 windows-sys、hidapi（含其内嵌的 HIDAPI C 库）等第三方组件。
 # MIT / Apache-2.0 / BSD-3-Clause 都要求「分发二进制时附带版权与许可声明」，这份文件就是履行该义务。
 #
 # 用法：
@@ -161,14 +161,14 @@ $texts[(Get-Sha256Of $bsdText)].Sources.Add('HIDAPI 内嵌 C 库（etc/hidapi/wi
 
 # ---- 4. 拼装输出 ----
 $gen = @()
-$gen += 'BatteryHub 第三方许可声明（THIRD-PARTY-NOTICES）'
+$gen += 'VitalTray 第三方许可声明（THIRD-PARTY-NOTICES）'
 $gen += '================================================='
 $gen += ''
 $gen += '本文件由 tools/gen-notices.ps1 自动生成，请勿手工编辑。'
 $gen += '  重新生成：pwsh ./tools/gen-notices.ps1'
 $gen += '  一致性校验：pwsh ./tools/gen-notices.ps1 -Check（CI 会跑）'
 $gen += ''
-$gen += 'BatteryHub 自身以 MIT 许可发布（见 LICENSE）。本文件覆盖随 batteryhub.exe'
+$gen += 'VitalTray 自身以 MIT 许可发布（见 LICENSE）。本文件覆盖随 vitaltray.exe'
 $gen += '一起分发的第三方组件及其许可全文，用于履行 MIT / Apache-2.0 / BSD-3-Clause'
 $gen += '「分发二进制时须附带版权与许可声明」的义务。'
 $gen += ''
@@ -206,7 +206,7 @@ if ($buildOnly.Count -gt 0) {
 
 $gen += '三、HIDAPI 内嵌 C 库（特别说明）'
 $gen += '------------------------------'
-$gen += 'batteryhub.exe 通过 hidapi crate 静态编译了 HIDAPI C 库的 Windows 后端'
+$gen += 'vitaltray.exe 通过 hidapi crate 静态编译了 HIDAPI C 库的 Windows 后端'
 $gen += '（etc/hidapi/windows/hid.c、hidapi_descriptor_reconstruct.c 及头文件）。'
 $gen += ''
 $gen += '上游 HIDAPI 采用三选一许可，由使用者选择：'

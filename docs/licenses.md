@@ -6,7 +6,7 @@
 
 ## 0. 一句话结论
 
-BatteryHub 以 **MIT** 发布，仓库内**不含任何第三方源代码**：参考用的仓库 clone 全部放在 `research/`，
+VitalTray（原 BatteryHub）以 **MIT** 发布，仓库内**不含任何第三方源代码**：参考用的仓库 clone 全部放在 `research/`，
 该目录在 [.gitignore](../.gitignore) 里整目录忽略，`git ls-files research` 结果为空。
 
 所以当前**没有**任何 GPL / MPL 的义务被触发。本文的价值不在于"合规"本身，而在于**可自证**：

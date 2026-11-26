@@ -1,7 +1,7 @@
 ﻿//! Français.
 
 pub static TABLE: &[(&str, &str)] = &[
-    ("cli.usage", "Usage : batteryhub.exe [options]"),
+    ("cli.usage", "Usage : vitaltray.exe [options]"),
     ("cli.opt.no_tray", "--no-tray          pas d'icône de notification (débogage)"),
     ("cli.opt.no_autostart", "--no-autostart     cette exécution ne touche pas au démarrage auto"),
     ("cli.opt.portable", "--portable         configuration et journaux à côté de l'exe"),

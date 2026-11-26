@@ -1,7 +1,7 @@
 //! 한국어.
 
 pub static TABLE: &[(&str, &str)] = &[
-    ("cli.usage", "사용법: batteryhub.exe [옵션]"),
+    ("cli.usage", "사용법: vitaltray.exe [옵션]"),
     ("cli.opt.no_tray", "--no-tray          트레이 아이콘을 만들지 않음(디버깅)"),
     ("cli.opt.no_autostart", "--no-autostart     이번 실행에서는 자동 시작 설정을 건드리지 않음"),
     ("cli.opt.portable", "--portable         포터블 모드: 설정과 로그를 exe 옆에 둠"),

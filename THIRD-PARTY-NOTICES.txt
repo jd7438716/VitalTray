@@ -1,11 +1,11 @@
-BatteryHub 第三方许可声明（THIRD-PARTY-NOTICES）
+VitalTray 第三方许可声明（THIRD-PARTY-NOTICES）
 =================================================
 
 本文件由 tools/gen-notices.ps1 自动生成，请勿手工编辑。
   重新生成：pwsh ./tools/gen-notices.ps1
   一致性校验：pwsh ./tools/gen-notices.ps1 -Check（CI 会跑）
 
-BatteryHub 自身以 MIT 许可发布（见 LICENSE）。本文件覆盖随 batteryhub.exe
+VitalTray 自身以 MIT 许可发布（见 LICENSE）。本文件覆盖随 vitaltray.exe
 一起分发的第三方组件及其许可全文，用于履行 MIT / Apache-2.0 / BSD-3-Clause
 「分发二进制时须附带版权与许可声明」的义务。
 
@@ -39,7 +39,7 @@ BatteryHub 自身以 MIT 许可发布（见 LICENSE）。本文件覆盖随 batt
 
 三、HIDAPI 内嵌 C 库（特别说明）
 ------------------------------
-batteryhub.exe 通过 hidapi crate 静态编译了 HIDAPI C 库的 Windows 后端
+vitaltray.exe 通过 hidapi crate 静态编译了 HIDAPI C 库的 Windows 后端
 （etc/hidapi/windows/hid.c、hidapi_descriptor_reconstruct.c 及头文件）。
 
 上游 HIDAPI 采用三选一许可，由使用者选择：

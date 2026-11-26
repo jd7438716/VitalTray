@@ -15,7 +15,7 @@ use windows_sys::Win32::UI::WindowsAndMessaging::{
 pub fn create_window(proc: WNDPROC) -> Option<HWND> {
     unsafe {
         let hinst = GetModuleHandleW(std::ptr::null());
-        let class = wide("BatteryHubPanel");
+        let class = wide("VitalTrayPanel");
         let wc = WNDCLASSW {
             style: CS_HREDRAW | CS_VREDRAW,
             lpfnWndProc: proc,

@@ -8,7 +8,7 @@ use windows_sys::Win32::UI::WindowsAndMessaging::{
     WS_OVERLAPPEDWINDOW,
 };
 
-const CLASS_NAME: &str = "BatteryHubHostWindow";
+const CLASS_NAME: &str = "VitalTrayHostWindow";
 
 /// “把面板/菜单交出来”的消息：第二个实例已经退出托盘的情况下，
 /// 再运行一次 exe 就用它唤出面板（面板上右键即出菜单）。
@@ -47,7 +47,7 @@ pub fn create_host_window(wndproc: unsafe extern "system" fn(HWND, u32, usize, i
         if RegisterClassW(&wc) == 0 {
             return None;
         }
-        let title = wide("BatteryHub");
+        let title = wide("VitalTray");
         let hwnd = CreateWindowExW(
             0,
             class.as_ptr(),

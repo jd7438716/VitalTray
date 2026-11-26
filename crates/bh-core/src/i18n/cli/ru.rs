@@ -1,7 +1,7 @@
 //! Русский.
 
 pub static TABLE: &[(&str, &str)] = &[
-    ("cli.usage", "Использование: batteryhub.exe [параметры]"),
+    ("cli.usage", "Использование: vitaltray.exe [параметры]"),
     ("cli.opt.no_tray", "--no-tray          не создавать значок в трее (отладка)"),
     ("cli.opt.no_autostart", "--no-autostart     этот запуск не трогает автозагрузку"),
     ("cli.opt.portable", "--portable         настройки и журналы рядом с exe"),

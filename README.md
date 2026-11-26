@@ -1,12 +1,16 @@
-# BatteryHub（自研版）
+# VitalTray
 
-[![CI](https://github.com/jd7438716/battery-hub/actions/workflows/ci.yml/badge.svg)](https://github.com/jd7438716/battery-hub/actions/workflows/ci.yml)
+[![CI](https://github.com/jd7438716/vital-tray/actions/workflows/ci.yml/badge.svg)](https://github.com/jd7438716/vital-tray/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 Windows 10/11 托盘工具：**无线外设电量 + 整机温度面板**（CPU / GPU / 硬盘温度）。
 Rust + 原生 Win32，零第三方运行时，MIT。
 
-> 状态：**M0–M8 完成**。左键托盘看面板（温度 + 设备电量），右键托盘做设置（原生菜单）。
+> **原名 BatteryHub（→ 2026-11-26 更名 VitalTray）**。改名原因、候选对比与迁移方案：
+> [docs/adr/0004-rename-to-vitaltray.md](docs/adr/0004-rename-to-vitaltray.md)。
+> 本项目与任何同名项目**无关联**，详见[名称与商标](#名称与商标)。
+
+> 状态：**M0–M9 完成**。左键托盘看面板（温度 + 设备电量），右键托盘做设置（原生菜单）。
 > 计划书：[PLAN.md](PLAN.md) ｜ 插件架构决策：[docs/adr/0001-plugin-architecture.md](docs/adr/0001-plugin-architecture.md)
 
 ![状态面板](docs/screenshot-panel.png)
@@ -16,31 +20,44 @@ Rust + 原生 Win32，零第三方运行时，MIT。
 
 ## 下载与安装
 
-到 [Releases](https://github.com/jd7438716/battery-hub/releases) 下载 `batteryhub.exe`，双击即可运行
+到 [Releases](https://github.com/jd7438716/vital-tray/releases) 下载 `vitaltray.exe`，双击即可运行
 （GUI 子系统，不会弹黑窗）。
 
 - **校验下载**：发布页 `SHA256SUMS.txt` 里有哈希，
   ```powershell
-  Get-FileHash .\batteryhub.exe -Algorithm SHA256
+  Get-FileHash .\vitaltray.exe -Algorithm SHA256
   ```
-- **便携模式**：`batteryhub.exe --portable` —— 配置与日志放 exe 同目录，不写注册表。
+- **便携模式**：`vitaltray.exe --portable` —— 配置与日志放 exe 同目录，不写注册表。
 - **开机自启**：默认写用户级 `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`，不需要管理员；
   右键托盘可随时关掉。
-- **卸载**：右键托盘 → 退出；删掉 exe；再删 `%LOCALAPPDATA%\BatteryHub` 与注册表值
-  `HKCU\Software\Microsoft\Windows\CurrentVersion\Run\BatteryHub`。
+- **卸载**：右键托盘 → 退出；删掉 exe；再删 `%LOCALAPPDATA%\VitalTray` 与注册表值
+  `HKCU\Software\Microsoft\Windows\CurrentVersion\Run\VitalTray`。
 - **SmartScreen**：exe 未签名，首次运行可能提示「Windows 已保护你的电脑」→ 更多信息 → 仍要运行；
   介意的话用上面的 SHA256 自行核对。
 
 当前版本：**1.1.1**（变更见 [CHANGELOG.md](CHANGELOG.md)）。
 
+## 从 BatteryHub 升级
+
+更名后 exe、配置目录与自启项都换了名字，工具会**自动迁移**，不用手动搬：
+
+| 项 | 旧（BatteryHub） | 新（VitalTray） | 迁移方式 |
+|---|---|---|---|
+| 可执行文件 | `batteryhub.exe` | `vitaltray.exe` | 旧 exe 自行删除 |
+| 配置与日志 | `%LOCALAPPDATA%\BatteryHub\` | `%LOCALAPPDATA%\VitalTray\` | 首次启动自动复制 `config.ini`，**旧目录保留不删** |
+| 开机自启 | `Run\BatteryHub` | `Run\VitalTray` | 启动时清掉旧值；若配置里自启为开，按新名重写 |
+| 安装位置 | `%LOCALAPPDATA%\Programs\BatteryHub\` | `...\Programs\VitalTray\` | `tools/install.ps1` 会清理旧目录与旧快捷方式 |
+
+便携模式（`--portable`）不做跨目录迁移，把 `VitalTray\config.ini` 复制过去即可。
+
 ## 从源码构建
 
 ```powershell
 cargo build --release
-.\target\release\batteryhub.exe             # 启动（托盘出现图标）
-.\target\release\batteryhub.exe --panel     # 启动后直接在鼠标位置弹出面板（调试/截图）
-.\target\release\batteryhub.exe --sysmon    # 采样一次温度（顺带打印占用/空间，排障用）并打印
-.\target\release\batteryhub.exe --self-test # 无界面自检
+.\target\release\vitaltray.exe             # 启动（托盘出现图标）
+.\target\release\vitaltray.exe --panel     # 启动后直接在鼠标位置弹出面板（调试/截图）
+.\target\release\vitaltray.exe --sysmon    # 采样一次温度（顺带打印占用/空间，排障用）并打印
+.\target\release\vitaltray.exe --self-test # 无界面自检
 ```
 
 常用命令：`--once`（读一次电量）、`--dump`（列 HID 设备）、`--watch vid:pid`（只读抓报文）、
@@ -54,10 +71,10 @@ cargo build --release
   蓝 = 充电中；灰 = 上次读数 / 无数据。细则见 [docs/status-colors.md](docs/status-colors.md)。
 - **右键托盘图标** → 原生菜单做功能：立即刷新 / 打开日志目录 / 开机自启 / 托盘图标开关 /
   图标样式 / 调试日志 / 语言 / 关于 / 退出。
-- **鼠标悬停托盘图标** → 提示只显示标题 `BatteryHub`；电量、续航都在左键面板里，提示不重复数字。
+- **鼠标悬停托盘图标** → 提示只显示标题 `VitalTray`；电量、续航都在左键面板里，提示不重复数字。
 - 面板里**只有信息、没有按钮**：点任意处、按 `Esc`、再点一次托盘 → 收起；
   在面板上按右键也是收起面板、把菜单交出来（左键=看，右键=做，两边不混）。
-- **托盘图标是唯一的菜单入口**：菜单里关掉它之后，再运行一次 `batteryhub.exe` 就会弹出面板，
+- **托盘图标是唯一的菜单入口**：菜单里关掉它之后，再运行一次 `vitaltray.exe` 就会弹出面板，
   在面板上右键即可把菜单拿回来（不用去改配置文件）。
 - 第二次双击 exe **不会**再起一个进程，而是把已经在跑的那个叫出来（以前是静默退出、看起来像没反应）。
 - **任务栏文本已移除**：按用户反馈，不再往任务栏里塞文字；所有信息进面板。
@@ -101,10 +118,12 @@ crates/bh-api      插件 API（不依赖平台，插件只依赖它）
 crates/bh-core     宿主：配置 / 日志 / 单实例 / 自启 / 托盘 / 面板 / 系统采样 / 消息循环
 crates/bh-app      可执行入口（build.rs 把图标 / 版本信息 / 应用清单编进 exe）
 plugins/           设备域插件：mouse / keyboard / laptop / bluetooth
-assets/            batteryhub.ico（16–256 九档，exe 图标与托盘兜底图标同源）
+assets/            vitaltray.ico（16–256 九档，exe 图标与托盘兜底图标同源）
 docs/adr/          架构决策记录
 tools/check-size.ps1   文件大小门禁（>400 行失败）
 tools/check-exe.ps1    资源门禁（缺图标 / 版本信息 / 清单即失败）
+tools/gen-notices.ps1  第三方许可清单生成与校验
+tools/check-cleanroom.ps1  洁净室门禁（源码里混进 GPL/上游标识即失败）
 ```
 
 面板代码结构（`crates/bh-core/src/panel/`）：
@@ -141,7 +160,7 @@ impl DeviceDomain for Domain {
 
 ## 配置与自启
 
-- 配置：`%LOCALAPPDATA%\BatteryHub\config.ini`（`--portable` 时放 exe 同目录）。
+- 配置：`%LOCALAPPDATA%\VitalTray\config.ini`（`--portable` 时放 exe 同目录）。
 - 自启：默认写 `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`，不碰 HKLM、不要管理员；
   菜单里可随时开关；`--no-autostart` 表示本次不改注册表。
 - 面板自动读取当前系统明暗主题；多显示器时按鼠标所在显示器的 DPI 与工作区摆位。
@@ -151,7 +170,7 @@ impl DeviceDomain for Domain {
 
 ## 日志（开发日志功能）
 
-- 位置：`%LOCALAPPDATA%\BatteryHub\app.log`（便携模式在 exe 同目录）。
+- 位置：`%LOCALAPPDATA%\VitalTray\app.log`（便携模式在 exe 同目录）。
 - 格式：`2026-11-23T22:47:49.283+08:00 [INFO ] [poll] -> [laptop:78%, mouse:86%]`
 - 级别：`error < warn < info < debug < trace`，默认 `info`。
 - 切换：`--log-level debug` 或「右键托盘 → 调试日志（详细）」，会写回配置。
@@ -165,6 +184,8 @@ impl DeviceDomain for Domain {
 - exe 必须带图标 / 版本信息 / 应用清单（`tools/check-exe.ps1`，CI 与 release 都会跑）。
   曾经把三样全缺的 exe 发上了 Releases——资源管理器里是通用白窗图标，属性页一片空白。
 - 洁净室：只参考协议事实，不复制任何 GPL 代码（见 PLAN.md 第 2 节）。
+  `tools/check-cleanroom.ps1` 会扫出源码里混进来的 GPL/上游标识（CI 跑）；
+  本地若保留 `research/` 下的上游 clone，还会做「注释/字符串逐字重合」比对。
 - 温度/占用拿不到就显示 “—”，不猜数字。
 
 ## 路线
@@ -179,12 +200,24 @@ impl DeviceDomain for Domain {
 - **M6 ✅** 分级开发日志
 - **M7 ✅** 竖排状态面板：CPU/GPU/内存/磁盘/温度、品牌型号、图标、菜单式交互
 - **v1.0.0 ✅** 首个公开版本（2026-11-26），见 [CHANGELOG.md](CHANGELOG.md)
+- **v1.2.0（未发布）** 产品更名 VitalTray + 旧配置/自启项自动迁移（[ADR 0004](docs/adr/0004-rename-to-vitaltray.md)）
 - **待办**：Logitech 接收器多设备配对表；校准向导 UI；磁盘 SMART 温度（需要管理员，暂不做）。
 
 ## 许可
 
-MIT。
+MIT（见 [LICENSE](LICENSE)）。
 
 - 参考过的开源项目、各自许可与本项目的许可选举：[docs/licenses.md](docs/licenses.md)
+- 许可策略（为什么 MIT 站得住、边界在哪）：[docs/adr/0003-license-strategy.md](docs/adr/0003-license-strategy.md)
 - 随 exe 分发的第三方许可全文：[THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt)
   （由 `tools/gen-notices.ps1` 从 `Cargo.lock` 生成，CI 校验未过期）
+
+### 名称与商标
+
+- **VitalTray 与任何同名项目无关**，不是任何项目的官方版本、衍生版或分支；作者也未使用他人的
+  商标、图标、文案或截图。历史项目名 "BatteryHub" 仅用于说明来历（更名记录见
+  [ADR 0004](docs/adr/0004-rename-to-vitaltray.md)）。
+- **MIT 不授予商标权**（GPL 亦然）：本项目的开源许可只覆盖代码本身，不构成对 "VitalTray"
+  这一名称的商标许可。若要基于本项目做二次分发/上架，请换用自己的名称与图标，避免用户混淆。
+- 名称在更名前做过同名检索（GitHub 同名仓库数、Web 检索），证据与日期记录在
+  [ADR 0004](docs/adr/0004-rename-to-vitaltray.md)；如发现名称冲突请开 issue，我们会处理。

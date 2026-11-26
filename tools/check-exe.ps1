@@ -3,8 +3,8 @@
 # 起因：v1.0/v1.1 发出去的 exe 里一个资源都没有——资源管理器显示通用白窗图标、
 # 属性页一片空白、原生菜单走经典样式，发布流水线却毫无察觉。这个脚本就是那次漏检的补丁。
 #
-# 用法：./tools/check-exe.ps1 [exe 路径，默认 target/release/batteryhub.exe]
-param([string]$Path = "target/release/batteryhub.exe")
+# 用法：./tools/check-exe.ps1 [exe 路径，默认 target/release/vitaltray.exe]
+param([string]$Path = "target/release/vitaltray.exe")
 $ErrorActionPreference = 'Stop'
 
 $root = Split-Path $PSScriptRoot -Parent

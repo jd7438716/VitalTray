@@ -39,6 +39,25 @@
 - **修复 notices 门禁的区域设置依赖**：`tools/gen-notices.ps1` 原先用 `Sort-Object`（文化敏感排序），
   本机 zh-CN 与 CI 的 en-US 对中文许可标签排序相反，导致 `-Check` 在 CI 上把正常文件误判为漂移。
   现改为 `[string]::CompareOrdinal` + ASCII 排序键，两种 locale 产出逐字节相同。
+- 新增 [docs/adr/0003-license-strategy.md](docs/adr/0003-license-strategy.md)：上游多为 GPL
+  而本项目保持 MIT 的依据（表达/事实二分、判例、实测无逐字重合）与三条边界（商标 / 专利 / 编辑著作权）。
+- 新增 `tools/check-cleanroom.ps1`：CI 扫源码中混入的 GPL 与上游标识；本地若保留 `research/`，
+  再做「注释 / 字符串逐字重合」比对——把"洁净室"从声明变成可执行门禁。
+- README 增加「名称与商标」：与同名项目无关、MIT 不含商标授权、更名前的同名检索证据。
+
+### 变更（破坏性：产品更名）
+
+- **BatteryHub → VitalTray**。改名原因（GitHub 同名检索：`battery-hub` 有 152 个同名仓库，且上游
+  C++/Qt 项目自 v1.1.0 起正式改名 BatteryHub）与候选对比见
+  [docs/adr/0004-rename-to-vitaltray.md](docs/adr/0004-rename-to-vitaltray.md)。
+  - 可执行文件 `batteryhub.exe` → `vitaltray.exe`；图标 `assets/batteryhub.ico` → `assets/vitaltray.ico`。
+  - 配置与日志目录 `%LOCALAPPDATA%\BatteryHub\` → `%LOCALAPPDATA%\VitalTray\`：首次启动自动复制旧
+    `config.ini`，**旧目录保留不删**（用户可能还留着旧版）。
+  - 开机自启 `Run\BatteryHub` → `Run\VitalTray`：启动时清除旧值，配置要求自启时按新名重写。
+  - Windows 版本资源（ProductName / InternalName / OriginalFilename / CompanyName / 应用清单标识）
+    与 10 语言「文件说明」全部改为 VitalTray。
+  - `tools/install.ps1` / `tools/uninstall.ps1` 顺带清理旧名遗留：进程、Run 值、快捷方式、安装目录。
+  - 单实例互斥体名改为 `Local\VitalTray.SingleInstance`。
 
 ## [1.1.1] - 2026-11-26
 

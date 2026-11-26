@@ -13,7 +13,7 @@ const ICON_ID: &str = "1";
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
     let manifest_dir = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap_or_default());
-    let ico = manifest_dir.join("../../assets/batteryhub.ico");
+    let ico = manifest_dir.join("../../assets/vitaltray.ico");
     println!("cargo:rerun-if-changed={}", ico.display());
 
     if std::env::var("CARGO_CFG_TARGET_OS").as_deref() != Ok("windows")
@@ -22,7 +22,7 @@ fn main() {
         return;
     }
     if !ico.is_file() {
-        println!("cargo:warning=assets/batteryhub.ico 不存在，exe 将不带图标");
+        println!("cargo:warning=assets/vitaltray.ico 不存在，exe 将不带图标");
         return;
     }
     let Some(rc) = find_rc() else {
@@ -34,19 +34,19 @@ fn main() {
     let (a, b, c, d) = version_tuple(&version);
     let out = PathBuf::from(std::env::var("OUT_DIR").unwrap_or_default());
 
-    let manifest = out.join("batteryhub.manifest");
+    let manifest = out.join("vitaltray.manifest");
     if std::fs::write(&manifest, manifest_xml(&version)).is_err() {
         println!("cargo:warning=写应用清单失败，exe 将不带清单（菜单会用经典样式）");
         return;
     }
 
-    let rc_file = out.join("batteryhub.rc");
+    let rc_file = out.join("vitaltray.rc");
     if std::fs::write(&rc_file, rc_text(&ico, &manifest, (a, b, c, d), &version)).is_err() {
         println!("cargo:warning=写 .rc 失败，exe 将不带资源");
         return;
     }
 
-    let res = out.join("batteryhub.res");
+    let res = out.join("vitaltray.res");
     let ok = Command::new(&rc)
         .arg("/nologo")
         .arg("/fo")
@@ -117,16 +117,16 @@ fn esc(p: &Path) -> String {
 /// 语言 ID 用 LANGID 十六进制，代码页 1200（Unicode）；`rc.exe` 允许一个 VERSIONINFO
 /// 里挂多个 StringFileInfo 块，正是给这种情况用的。
 const DESCRIPTIONS: [(&str, &str); 10] = [
-    ("0409", "BatteryHub — wireless device battery and system temperature tray panel"),
-    ("0804", "BatteryHub — 无线外设电量与整机温度托盘面板"),
-    ("0404", "BatteryHub — 無線周邊電量與整機溫度系統匣面板"),
-    ("0411", "BatteryHub — ワイヤレス機器の残量と本体温度のトレイパネル"),
-    ("0412", "BatteryHub — 무선 장치 배터리와 본체 온도 트레이 패널"),
-    ("0407", "BatteryHub — Akkustand von Funkgeräten und Systemtemperaturen im Tray"),
-    ("040C", "BatteryHub — batterie des appareils sans fil et températures système dans la zone de notification"),
-    ("0C0A", "BatteryHub — batería de dispositivos inalámbricos y temperaturas del sistema en la bandeja"),
-    ("0419", "BatteryHub — заряд беспроводных устройств и температуры системы в трее"),
-    ("0416", "BatteryHub — bateria de dispositivos sem fio e temperaturas do sistema na bandeja"),
+    ("0409", "VitalTray — wireless device battery and system temperature tray panel"),
+    ("0804", "VitalTray — 无线外设电量与整机温度托盘面板"),
+    ("0404", "VitalTray — 無線周邊電量與整機溫度系統匣面板"),
+    ("0411", "VitalTray — ワイヤレス機器の残量と本体温度のトレイパネル"),
+    ("0412", "VitalTray — 무선 장치 배터리와 본체 온도 트레이 패널"),
+    ("0407", "VitalTray — Akkustand von Funkgeräten und Systemtemperaturen im Tray"),
+    ("040C", "VitalTray — batterie des appareils sans fil et températures système dans la zone de notification"),
+    ("0C0A", "VitalTray — batería de dispositivos inalámbricos y temperaturas del sistema en la bandeja"),
+    ("0419", "VitalTray — заряд беспроводных устройств и температуры системы в трее"),
+    ("0416", "VitalTray — bateria de dispositivos sem fio e temperaturas do sistema na bandeja"),
 ];
 
 fn rc_text(
@@ -167,13 +167,13 @@ fn string_file_info_blocks(version: &str) -> String {
         out.push_str(&format!(
             "    BLOCK \"{lang}04B0\"\n\
              \x20   BEGIN\n\
-             \x20     VALUE \"CompanyName\", \"BatteryHub\"\n\
+             \x20     VALUE \"CompanyName\", \"VitalTray\"\n\
              \x20     VALUE \"FileDescription\", \"{description}\"\n\
              \x20     VALUE \"FileVersion\", \"{version}\"\n\
-             \x20     VALUE \"InternalName\", \"batteryhub\"\n\
+             \x20     VALUE \"InternalName\", \"vitaltray\"\n\
              \x20     VALUE \"LegalCopyright\", \"MIT License\"\n\
-             \x20     VALUE \"OriginalFilename\", \"batteryhub.exe\"\n\
-             \x20     VALUE \"ProductName\", \"BatteryHub\"\n\
+             \x20     VALUE \"OriginalFilename\", \"vitaltray.exe\"\n\
+             \x20     VALUE \"ProductName\", \"VitalTray\"\n\
              \x20     VALUE \"ProductVersion\", \"{version}\"\n\
              \x20   END\n"
         ));
@@ -195,7 +195,7 @@ fn manifest_xml(version: &str) -> String {
     format!(
         r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
-  <assemblyIdentity type="win32" name="BatteryHub.app" version="{a}.{b}.{c}.0" processorArchitecture="*"/>
+  <assemblyIdentity type="win32" name="VitalTray.app" version="{a}.{b}.{c}.0" processorArchitecture="*"/>
   <dependency>
     <dependentAssembly>
       <assemblyIdentity type="win32" name="Microsoft.Windows.Common-Controls" version="6.0.0.0" processorArchitecture="*" publicKeyToken="6595b64144ccf1df" language="*"/>

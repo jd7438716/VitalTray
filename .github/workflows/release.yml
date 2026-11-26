@@ -1,7 +1,7 @@
 name: Release
 
 # 打 tag（v1.0.0 这种）即自动构建 + 发布到 GitHub Releases。
-# 发布内容：batteryhub.exe + SHA256SUMS.txt；发布说明默认从提交自动生成，
+# 发布内容：vitaltray.exe + SHA256SUMS.txt；发布说明默认从提交自动生成，
 # 之后可用 `gh release edit <tag> --notes-file <文件>` 换成手写说明。
 
 on:
@@ -50,17 +50,17 @@ jobs:
       # 发布前必须确认 exe 真的带着图标/版本信息/清单，否则下载页又是一个“白窗图标”的 exe。
       - name: 资源门禁（图标 / 版本信息 / 应用清单）
         shell: pwsh
-        run: ./tools/check-exe.ps1 ./target/release/batteryhub.exe
+        run: ./tools/check-exe.ps1 ./target/release/vitaltray.exe
 
       - name: 无界面自检
         shell: pwsh
-        run: ./target/release/batteryhub.exe --self-test
+        run: ./target/release/vitaltray.exe --self-test
 
       - name: 生成 SHA256SUMS.txt
         shell: pwsh
         run: |
-          $hash = (Get-FileHash target/release/batteryhub.exe -Algorithm SHA256).Hash.ToLower()
-          "batteryhub.exe  $hash" | Out-File -FilePath target/release/SHA256SUMS.txt -Encoding ascii
+          $hash = (Get-FileHash target/release/vitaltray.exe -Algorithm SHA256).Hash.ToLower()
+          "vitaltray.exe  $hash" | Out-File -FilePath target/release/SHA256SUMS.txt -Encoding ascii
           Get-Content target/release/SHA256SUMS.txt
 
       # 发布物必须带上第三方许可声明，否则 MIT / Apache-2.0 / BSD-3 的告知义务没履行。
@@ -71,12 +71,12 @@ jobs:
       - name: 发布到 GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
-          name: BatteryHub ${{ github.ref_name }}
+          name: VitalTray ${{ github.ref_name }}
           draft: false
           prerelease: false
           generate_release_notes: true
           files: |
-            target/release/batteryhub.exe
+            target/release/vitaltray.exe
             target/release/SHA256SUMS.txt
             THIRD-PARTY-NOTICES.txt
             LICENSE

@@ -78,7 +78,7 @@ impl Args {
             "cli.opt.version",
             "cli.opt.help",
         ];
-        let mut s = format!("BatteryHub {}\n\n{}\n\n", crate::VERSION, crate::i18n::t("cli.usage"));
+        let mut s = format!("VitalTray {}\n\n{}\n\n", crate::VERSION, crate::i18n::t("cli.usage"));
         for key in OPTIONS {
             s.push_str("  ");
             s.push_str(crate::i18n::t(key));

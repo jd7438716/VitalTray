@@ -37,6 +37,11 @@ jobs:
         shell: pwsh
         run: ./tools/check-size.ps1
 
+      # 洁净室：源码里混进 GPL/MPL 正文或版权头即失败（research/ 不入库，深层比对自动跳过）。
+      - name: 洁净室门禁（不得复制 GPL 代码）
+        shell: pwsh
+        run: ./tools/check-cleanroom.ps1
+
       # 不加 -D warnings：clippy 默认 deny 的 lint（如 not_unsafe_ptr_arg_deref）仍然会让这一步失败，
       # 而风格类 warning 作为 v1.0 之后的技术债逐步清理，不阻塞发布。
       - name: clippy
@@ -58,16 +63,16 @@ jobs:
       # 这条门禁就是那次漏检的补丁：缺资源直接失败。
       - name: 资源门禁（图标 / 版本信息 / 应用清单）
         shell: pwsh
-        run: ./tools/check-exe.ps1 ./target/release/batteryhub.exe
+        run: ./tools/check-exe.ps1 ./target/release/vitaltray.exe
 
       - name: 无界面自检
         shell: pwsh
-        run: ./target/release/batteryhub.exe --self-test
+        run: ./target/release/vitaltray.exe --self-test
 
       - name: 上传 exe
         uses: actions/upload-artifact@v4
         with:
-          name: batteryhub-exe
-          path: target/release/batteryhub.exe
+          name: vitaltray-exe
+          path: target/release/vitaltray.exe
           if-no-files-found: error
           retention-days: 14

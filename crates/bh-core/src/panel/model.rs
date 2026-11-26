@@ -71,7 +71,7 @@ pub fn build() -> Model {
     });
     let snap = sysmon::latest();
     let info = machine::info();
-    let brand = if info.vendor.is_empty() { "BatteryHub".to_string() } else { info.vendor.clone() };
+    let brand = if info.vendor.is_empty() { "VitalTray".to_string() } else { info.vendor.clone() };
     let model = if info.model.is_empty() { i18n::t("panel.status").to_string() } else { info.model.clone() };
     Model {
         brand,

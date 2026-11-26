@@ -1,5 +1,9 @@
 # BatteryHub 自研计划书（Clean-room · 插件化 · 小文件）
 
+> **注（2026-11-26）**：本文档写于旧产品名 **BatteryHub** 时期。产品已更名为 **VitalTray**，
+> 决策见 [docs/adr/0004-rename-to-vitaltray.md](docs/adr/0004-rename-to-vitaltray.md)。
+> 为保留历史，正文中的旧名与旧路径**不再改写**（新名以 README / CHANGELOG 为准）。
+
 > 版本：v0.1 草案 ｜ 日期：2026-11-23 ｜ 目标：Windows 10/11 任务栏无线外设电量工具，自研、原生、可扩展
 > 参考原则：只抄思路，不抄代码；参考对象 = 原版 BatteryHub 的架构思路 + Gitee「休息提醒 XiuxiTimer」的托盘/右键/自启交互。
 
