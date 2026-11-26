@@ -17,6 +17,8 @@ pub fn rgb(r: u8, g: u8, b: u8) -> u32 {
 }
 
 pub fn font(height: i32, bold: bool) -> H {
+    // 字体跟着语言走：中日韩各用一套带该文种字形的系统字体（见 i18n::ui_font）。
+    let face: Vec<u16> = crate::i18n::ui_font().encode_utf16().chain(std::iter::once(0)).collect();
     unsafe {
         CreateFontW(
             -height.max(1),
@@ -32,7 +34,7 @@ pub fn font(height: i32, bold: bool) -> H {
             0,
             0,
             0,
-            windows_sys::core::w!("Microsoft YaHei UI"),
+            face.as_ptr(),
         )
     }
 }

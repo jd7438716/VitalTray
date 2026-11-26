@@ -1,4 +1,4 @@
-//! 状态分级与状态色：托盘图标和面板共用同一套阈值、优先级和颜色。
+﻿//! 状态分级与状态色：托盘图标和面板共用同一套阈值、优先级和颜色。
 //!
 //! 一条原则：**颜色只表达“要不要管”，不表达“这是哪台设备”**。
 //!
@@ -82,7 +82,7 @@ pub fn state_of(soc: u8, charging: bool, stale: bool, low: u8) -> State {
 pub fn aggregate(readings: &[DeviceReading], low: u8) -> Aggregate {
     // 幽灵行（接收器常驻但从未上报过的通道）不参与汇总。
     let live = || readings.iter().filter(|r| !r.ghost);
-    let fresh = live().filter(|r| r.error.is_none() && !r.stale);
+    let fresh = live().filter(|r| r.error.is_none() && !r.stale && !r.pending);
 
     let mut min_fresh: Option<u8> = None;
     let mut any_charging = false;
@@ -112,7 +112,7 @@ pub fn aggregate(readings: &[DeviceReading], low: u8) -> Aggregate {
     }
 
     let mut min_stale: Option<u8> = None;
-    for r in live().filter(|r| r.error.is_none()) {
+    for r in live().filter(|r| r.error.is_none() && !r.pending) {
         min_stale = Some(min_stale.map_or(r.soc, |m| m.min(r.soc)));
     }
     Aggregate {
@@ -165,6 +165,7 @@ mod tests {
             soc,
             charging,
             error: error.map(|e| e.to_string()),
+            pending: false,
             stale,
             ghost: false,
         }
@@ -224,7 +225,7 @@ mod tests {
         let mixed = [
             reading(90, false, false, None),
             reading(10, false, true, None),
-            reading(0, false, false, Some("打开失败")),
+            reading(0, false, false, Some("open failed")),
         ];
         assert_eq!(aggregate(&mixed, 20), Aggregate { state: State::Good, percent: Some(90) });
 
@@ -232,7 +233,7 @@ mod tests {
         assert_eq!(aggregate(&stale_only, 20), Aggregate { state: State::Stale, percent: Some(40) });
 
         assert_eq!(aggregate(&[], 20), Aggregate { state: State::Unknown, percent: None });
-        let broken = [reading(0, false, false, Some("打开失败"))];
+        let broken = [reading(0, false, false, Some("open failed"))];
         assert_eq!(aggregate(&broken, 20), Aggregate { state: State::Unknown, percent: None });
     }
 

@@ -11,7 +11,7 @@ pub fn enumerate() -> Result<Vec<Device>, String> {
     let api = hidapi::HidApi::new().map_err(|e| e.to_string())?;
     let mut out = Vec::new();
     for d in api.device_list() {
-        let product = d.product_string().unwrap_or("HID 设备").to_string();
+        let product = d.product_string().unwrap_or("HID").to_string();
         let serial = d.serial_number().map(|s| s.to_string());
         let vid = d.vendor_id();
         let pid = d.product_id();

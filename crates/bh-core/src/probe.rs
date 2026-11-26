@@ -1,26 +1,27 @@
 //! 调试/排障命令：--once 读一次，--dump 列 HID 设备。
+//!
+//! 输出跟着界面语言走（`i18n`）：设备名、VID/PID、字节值这些事实保持原样，只有标签被翻译。
 
+use crate::i18n::{t, tf};
 use crate::poller;
 
 pub fn once() -> i32 {
     let readings = poller::collect_once();
     if readings.is_empty() {
-        println!("未发现可读取的设备（插上无线鼠标/键盘，或本机没有电池）。");
+        println!("{}", t("cli.once.empty"));
         return 0;
     }
     for r in &readings {
         // 幽灵 = 从未成功上报过的通道（接收器常驻），面板不展示，排障时仍列出来。
-        let tag = if r.ghost { "幽灵" } else { "" };
-        match &r.error {
-            Some(e) => println!("{:<24} {:<8} {:<4} 读取失败: {e}", r.name, r.domain, tag),
-            None => println!(
-                "{:<24} {:<8} {:<4} {}%{}",
-                r.name,
-                r.domain,
-                tag,
-                r.soc,
-                if r.charging { " (充电中)" } else { "" }
-            ),
+        let tag = if r.ghost { t("cli.once.ghost") } else { "" };
+        if r.pending {
+            println!("{:<24} {:<8} {:<6} {}", r.name, r.domain, tag, t("panel.waiting"));
+        } else if let Some(e) = &r.error {
+            let line = tf("cli.once.failed", &[("error", e)]);
+            println!("{:<24} {:<8} {:<6} {line}", r.name, r.domain, tag);
+        } else {
+            let charging = if r.charging { t("cli.once.charging") } else { "" };
+            println!("{:<24} {:<8} {:<6} {}% {}", r.name, r.domain, tag, r.soc, charging);
         }
     }
     0
@@ -29,7 +30,8 @@ pub fn once() -> i32 {
 pub fn dump_hid() -> i32 {
     match bh_hid::enumerate() {
         Ok(list) => {
-            println!("共 {} 个 HID 设备：", list.len());
+            let count = list.len().to_string();
+            println!("{}", tf("cli.dump.header", &[("count", &count)]));
             for d in &list {
                 let i = &d.info;
                 println!(
@@ -37,14 +39,14 @@ pub fn dump_hid() -> i32 {
                     i.vendor_id, i.product_id, i.usage_page, i.usage, i.transport, i.product
                 );
             }
-            println!("\n蓝牙节点：");
+            println!("\n{}", t("cli.dump.bluetooth"));
             for line in crate::bt::debug_lines() {
                 println!("  {line}");
             }
             0
         }
         Err(e) => {
-            println!("枚举失败: {e}");
+            println!("{}", tf("cli.dump.failed", &[("error", &e)]));
             1
         }
     }
@@ -56,53 +58,66 @@ pub fn sysmon_once() -> i32 {
     std::thread::sleep(std::time::Duration::from_millis(1600));
     let s = crate::sysmon::latest();
     let m = crate::machine::info();
-    println!("机器: {} {}", m.vendor, m.model);
-    println!("CPU:  {}", m.cpu);
-    println!(
-        "CPU:  占用={} 温度={}",
-        opt(s.cpu_use, |v| format!("{v}%")),
-        opt(s.cpu_temp, |v| format!("{v}°C"))
-    );
+    println!("{}", tf("cli.sysmon.machine", &[("vendor", &m.vendor), ("model", &m.model)]));
+    println!("{}", tf("cli.sysmon.cpu", &[("model", &m.cpu)]));
+    let cpu_use = pct(s.cpu_use);
+    let cpu_temp = temp(s.cpu_temp);
+    println!("{}", tf("cli.sysmon.cpu_line", &[("use", &cpu_use), ("temp", &cpu_temp)]));
     if let Some(mem) = &s.mem {
-        println!("内存: {}%  {}/{} MB", mem.percent, mem.used_mb, mem.total_mb);
+        let args = [
+            ("percent", mem.percent.to_string()),
+            ("used", mem.used_mb.to_string()),
+            ("total", mem.total_mb.to_string()),
+        ];
+        println!("{}", tf("cli.sysmon.mem", &pairs(&args)));
     }
     if let Some(d) = &s.disk {
-        println!(
-            "磁盘: {}: {}%  可用 {} GB / {} GB  温度={}",
-            d.letter,
-            d.percent,
-            d.free_mb / 1024,
-            d.total_mb / 1024,
-            opt(d.temp_c, |v| format!("{v}°C"))
-        );
+        let temp_c = temp(d.temp_c);
+        let args = [
+            ("letter", d.letter.to_string()),
+            ("percent", d.percent.to_string()),
+            ("free", (d.free_mb / 1024).to_string()),
+            ("total", (d.total_mb / 1024).to_string()),
+            ("temp", temp_c),
+        ];
+        println!("{}", tf("cli.sysmon.disk", &pairs(&args)));
     }
     if s.gpus.is_empty() {
-        println!("GPU:  未枚举到适配器（占用兜底={}）", opt(s.gpu_use, |v| format!("{v}%")));
+        println!("{}", tf("cli.sysmon.gpu_none", &[("use", &pct(s.gpu_use))]));
     }
     for g in &s.gpus {
-        println!("GPU:  {} 占用={} 温度={}", g.name, opt(g.use_percent, |v| format!("{v}%")), opt(g.temp_c, |v| format!("{v}°C")));
+        let args = [("name", g.name.clone()), ("use", pct(g.use_percent)), ("temp", temp(g.temp_c))];
+        println!("{}", tf("cli.sysmon.gpu", &pairs(&args)));
     }
     if s.cpu_temp.is_none() {
-        println!("提示：本机 ACPI 热区未上报温度，或该机型不提供。");
+        println!("{}", t("cli.sysmon.hint_cpu"));
     }
     if s.disk.as_ref().is_some_and(|d| d.temp_c.is_none()) {
-        println!("提示：硬盘温度读不到（非 NVMe、或该驱动不支持 SMART 日志页）。");
+        println!("{}", t("cli.sysmon.hint_disk"));
     }
     0
 }
 
-fn opt<T>(v: Option<T>, f: impl FnOnce(T) -> String) -> String {
-    v.map(f).unwrap_or_else(|| "—".to_string())
+fn pct(v: Option<u8>) -> String {
+    v.map(|v| format!("{v}%")).unwrap_or_else(|| "—".to_string())
+}
+
+fn temp(v: Option<u8>) -> String {
+    v.map(|v| format!("{v}°C")).unwrap_or_else(|| "—".to_string())
+}
+
+fn pairs<'a, const N: usize>(items: &'a [(&'static str, String); N]) -> Vec<(&'static str, &'a str)> {
+    items.iter().map(|(k, v)| (*k, v.as_str())).collect()
 }
 
 /// 只读监听某设备的输入报文：--watch 046d:c52b [--watch-for 180] [--watch-out file]
 pub fn watch(target: &str, secs: u64, out: Option<&str>) -> i32 {
     let Some((v, p)) = target.split_once(':') else {
-        println!("格式应为 vid:pid，例如 24ae:185a");
+        println!("{}", tf("cli.watch.bad_target", &[("example", "24ae:185a")]));
         return 1;
     };
     let (Ok(vid), Ok(pid)) = (u16::from_str_radix(v, 16), u16::from_str_radix(p, 16)) else {
-        println!("VID/PID 需要 16 进制");
+        println!("{}", t("cli.watch.bad_hex"));
         return 1;
     };
     let mut log = String::new();
@@ -113,7 +128,14 @@ pub fn watch(target: &str, secs: u64, out: Option<&str>) -> i32 {
     };
 
     let mut handles: Vec<(bh_hid::HidHandle, String)> = Vec::new();
-    emit(format!("监听 {vid:04x}:{pid:04x}，{secs} 秒，只读。可开关设备/使用它来产生报文。"));
+    emit(tf(
+        "cli.watch.start",
+        &[
+            ("vid", &format!("{vid:04x}")),
+            ("pid", &format!("{pid:04x}")),
+            ("secs", &secs.to_string()),
+        ],
+    ));
 
     let start = std::time::Instant::now();
     let mut total_frames = 0usize;
@@ -139,7 +161,7 @@ pub fn watch(target: &str, secs: u64, out: Option<&str>) -> i32 {
                         continue;
                     }
                     if let Ok(h) = bh_hid::open(&d) {
-                        emit(format!("  + 接口 {name}"));
+                        emit(tf("cli.watch.iface", &[("name", &name)]));
                         handles.push((h, name));
                     }
                 }
@@ -152,7 +174,8 @@ pub fn watch(target: &str, secs: u64, out: Option<&str>) -> i32 {
                 Err(e) => {
                     if errs_shown < 5 {
                         errs_shown += 1;
-                        emit(format!("  ! {name} read error: {e:?}"));
+                        let err = format!("{e:?}");
+                        emit(tf("cli.watch.read_error", &[("name", name), ("error", &err)]));
                     }
                 }
                 Ok(n) if n > 0 => {
@@ -169,14 +192,17 @@ pub fn watch(target: &str, secs: u64, out: Option<&str>) -> i32 {
         }
     }
 
-    emit(format!("结束：{total_frames} 条报文，{} 个接口", handles.len()));
+    emit(tf(
+        "cli.watch.end",
+        &[("frames", &total_frames.to_string()), ("ifaces", &handles.len().to_string())],
+    ));
     if let Some(path) = out {
         if std::fs::write(path, &log).is_ok() {
-            println!("已写入 {path}");
+            println!("{}", tf("cli.watch.written", &[("path", path)]));
         }
     }
     if total_frames == 0 {
-        println!("提示：设备空闲时不推报文。可开关设备电源，或在该设备上操作，然后重跑。");
+        println!("{}", t("cli.watch.hint"));
     }
     0
 }
@@ -184,15 +210,15 @@ pub fn watch(target: &str, secs: u64, out: Option<&str>) -> i32 {
 /// 读一次 feature report：--feature-get 24ae:185a --feature-id 05
 pub fn feature_get(target: &str, report_id: u8) -> i32 {
     let Some((v, p)) = target.split_once(':') else {
-        println!("格式应为 vid:pid");
+        println!("{}", t("cli.feature.bad_target"));
         return 1;
     };
     let (Ok(vid), Ok(pid)) = (u16::from_str_radix(v, 16), u16::from_str_radix(p, 16)) else {
-        println!("VID/PID 需要 16 进制");
+        println!("{}", t("cli.feature.bad_hex"));
         return 1;
     };
     let Ok(list) = bh_hid::enumerate() else {
-        println!("枚举失败");
+        println!("{}", t("cli.feature.no_enum"));
         return 1;
     };
     let mut cands: Vec<_> = list.into_iter().filter(|d| d.info.vendor_id == vid && d.info.product_id == pid).collect();
@@ -208,14 +234,14 @@ pub fn feature_get(target: &str, report_id: u8) -> i32 {
             }
         }
     }
-    println!("no reply for report {report_id:#04x}");
+    println!("{}", tf("cli.feature.no_reply", &[("id", &format!("{report_id:#04x}"))]));
     1
 }
 
 /// 分析自动抓帧日志：按"帧前缀"归组，找哪些字节稳定落在 0..=100（候选电量）。
 pub fn capture_report(dir: &std::path::Path) -> i32 {
     let Ok(entries) = std::fs::read_dir(dir) else {
-        println!("没有 capture 目录：{}", dir.display());
+        println!("{}", tf("cli.capture.no_dir", &[("dir", &dir.display().to_string())]));
         return 1;
     };
     let mut total = 0usize;
@@ -257,13 +283,13 @@ pub fn capture_report(dir: &std::path::Path) -> i32 {
             println!("  prefix[{prefix}] frames={} len={len}", frames.len());
             println!("    sample: {}", sample.join(" | "));
             if !candidates.is_empty() {
-                println!("    候选电量字节: {}", candidates.join(", "));
+                println!("    {}", tf("cli.capture.candidates", &[("list", &candidates.join(", "))]));
             }
         }
     }
-    println!("\n总计 {total} 帧");
+    println!("\n{}", tf("cli.capture.total", &[("count", &total.to_string())]));
     if total == 0 {
-        println!("还没有抓到帧：设备空闲时不会主动上报。正常使用（移动/按键/开关电源）后会自动落盘。");
+        println!("{}", t("cli.capture.empty"));
     }
     0
 }

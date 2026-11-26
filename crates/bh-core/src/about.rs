@@ -7,13 +7,17 @@ fn wide(s: &str) -> Vec<u16> {
 }
 
 pub fn show(plugin_lines: &[String], config_path: &str, log_dir: &str) {
-    let text = format!(
-        "BatteryHub {}\n\n{}：\n{}\n\n{}：{config_path}\n{}：{log_dir}",
-        crate::VERSION,
-        crate::i18n::t("about.plugins"),
-        plugin_lines.join("\n"),
-        crate::i18n::t("about.config"),
-        crate::i18n::t("about.logdir")
+    let text = crate::i18n::tf(
+        "about.body",
+        &[
+            ("version", crate::VERSION),
+            ("plugins", crate::i18n::t("about.plugins")),
+            ("plugins_list", &plugin_lines.join("\n")),
+            ("config", crate::i18n::t("about.config")),
+            ("config_path", config_path),
+            ("logdir", crate::i18n::t("about.logdir")),
+            ("log_path", log_dir),
+        ],
     );
     let t = wide(&text);
     let c = wide(crate::i18n::t("about.title"));

@@ -1,4 +1,4 @@
-//! 把图标 / 版本信息 / 应用清单编进 exe（Windows 资源）。
+﻿//! 把图标 / 版本信息 / 应用清单编进 exe（Windows 资源）。
 //!
 //! 路线：生成 `.rc` → Windows SDK 的 `rc.exe` 编成 `.res` → 交给链接器。
 //! 刻意不引第三方构建依赖；找不到 `rc.exe`（比如没装 Windows SDK）时只警告不失败，
@@ -112,6 +112,23 @@ fn esc(p: &Path) -> String {
     p.display().to_string().replace('\\', "\\\\")
 }
 
+/// 文件说明：资源管理器/属性页按系统语言挑一份（与界面语言无关，改系统语言后自变）。
+///
+/// 语言 ID 用 LANGID 十六进制，代码页 1200（Unicode）；`rc.exe` 允许一个 VERSIONINFO
+/// 里挂多个 StringFileInfo 块，正是给这种情况用的。
+const DESCRIPTIONS: [(&str, &str); 10] = [
+    ("0409", "BatteryHub — wireless device battery and system temperature tray panel"),
+    ("0804", "BatteryHub — 无线外设电量与整机温度托盘面板"),
+    ("0404", "BatteryHub — 無線周邊電量與整機溫度系統匣面板"),
+    ("0411", "BatteryHub — ワイヤレス機器の残量と本体温度のトレイパネル"),
+    ("0412", "BatteryHub — 무선 장치 배터리와 본체 온도 트레이 패널"),
+    ("0407", "BatteryHub — Akkustand von Funkgeräten und Systemtemperaturen im Tray"),
+    ("040C", "BatteryHub — batterie des appareils sans fil et températures système dans la zone de notification"),
+    ("0C0A", "BatteryHub — batería de dispositivos inalámbricos y temperaturas del sistema en la bandeja"),
+    ("0419", "BatteryHub — заряд беспроводных устройств и температуры системы в трее"),
+    ("0416", "BatteryHub — bateria de dispositivos sem fio e temperaturas do sistema na bandeja"),
+];
+
 fn rc_text(
     ico: &Path,
     manifest: &Path,
@@ -130,26 +147,46 @@ fn rc_text(
          BEGIN\n\
          \x20 BLOCK \"StringFileInfo\"\n\
          \x20 BEGIN\n\
-         \x20   BLOCK \"080404b0\"\n\
-         \x20   BEGIN\n\
-         \x20     VALUE \"CompanyName\", \"BatteryHub\"\n\
-         \x20     VALUE \"FileDescription\", \"BatteryHub — 无线外设电量与整机温度托盘面板\"\n\
-         \x20     VALUE \"FileVersion\", \"{version}\"\n\
-         \x20     VALUE \"InternalName\", \"batteryhub\"\n\
-         \x20     VALUE \"LegalCopyright\", \"MIT License\"\n\
-         \x20     VALUE \"OriginalFilename\", \"batteryhub.exe\"\n\
-         \x20     VALUE \"ProductName\", \"BatteryHub\"\n\
-         \x20     VALUE \"ProductVersion\", \"{version}\"\n\
-         \x20   END\n\
+         {blocks}\
          \x20 END\n\
          \x20 BLOCK \"VarFileInfo\"\n\
          \x20 BEGIN\n\
-         \x20   VALUE \"Translation\", 0x804, 1200\n\
+         \x20   VALUE \"Translation\", {translations}\n\
          \x20 END\n\
          END\n",
         ico = esc(ico),
         manifest = esc(manifest),
+        blocks = string_file_info_blocks(version),
+        translations = translation_pairs(),
     )
+}
+
+fn string_file_info_blocks(version: &str) -> String {
+    let mut out = String::new();
+    for (lang, description) in DESCRIPTIONS {
+        out.push_str(&format!(
+            "    BLOCK \"{lang}04B0\"\n\
+             \x20   BEGIN\n\
+             \x20     VALUE \"CompanyName\", \"BatteryHub\"\n\
+             \x20     VALUE \"FileDescription\", \"{description}\"\n\
+             \x20     VALUE \"FileVersion\", \"{version}\"\n\
+             \x20     VALUE \"InternalName\", \"batteryhub\"\n\
+             \x20     VALUE \"LegalCopyright\", \"MIT License\"\n\
+             \x20     VALUE \"OriginalFilename\", \"batteryhub.exe\"\n\
+             \x20     VALUE \"ProductName\", \"BatteryHub\"\n\
+             \x20     VALUE \"ProductVersion\", \"{version}\"\n\
+             \x20   END\n"
+        ));
+    }
+    out
+}
+
+fn translation_pairs() -> String {
+    DESCRIPTIONS
+        .iter()
+        .map(|(lang, _)| format!("0x{lang}, 1200"))
+        .collect::<Vec<_>>()
+        .join(", ")
 }
 
 /// 应用清单：视觉样式（comctl32 v6）+ 按显示器 DPI + Win10/11 支持声明。

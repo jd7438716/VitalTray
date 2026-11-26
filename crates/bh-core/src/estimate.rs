@@ -58,15 +58,18 @@ pub fn estimate(samples: &[Sample], soc: u8) -> Option<Estimate> {
     Some(Estimate { hours_left: hours, rate_per_hour: rate, samples: run.len() })
 }
 
-/// 展示用：不到 1 小时给分钟，超过 1 天给"约 N 天"。
+/// 展示用：不到 1 小时给分钟，超过 1 天给“约 N 天”。单位文案走 i18n。
 pub fn format_hours(h: f64) -> String {
-    if h < 1.0 {
-        format!("约 {:.0} 分钟", (h * 60.0).max(1.0))
+    let (key, n) = if h < 1.0 {
+        ("est.minutes", format!("{:.0}", (h * 60.0).max(1.0)))
     } else if h < 24.0 {
-        format!("约 {:.1} 小时", h)
+        // “5.0 小时” 削成 “5 小时”，半小时级保留一位小数
+        let s = format!("{h:.1}");
+        ("est.hours", s.trim_end_matches(".0").to_string())
     } else {
-        format!("约 {:.0} 天", h / 24.0)
-    }
+        ("est.days", format!("{:.0}", h / 24.0))
+    };
+    crate::i18n::tf(key, &[("n", &n)])
 }
 
 #[cfg(test)]
@@ -111,8 +114,11 @@ mod tests {
 
     #[test]
     fn format_units() {
-        assert!(format_hours(0.5).contains("分钟"));
-        assert!(format_hours(5.0).contains("小时"));
-        assert!(format_hours(50.0).contains("天"));
+        // 单位文本走 i18n，这里只验证“选对单位、数字对不上小数尾巴”
+        let want = |key: &str, n: &str| crate::i18n::tf(key, &[("n", n)]);
+        assert_eq!(format_hours(0.5), want("est.minutes", "30"));
+        assert_eq!(format_hours(5.0), want("est.hours", "5"));
+        assert_eq!(format_hours(5.25), want("est.hours", "5.2"));
+        assert_eq!(format_hours(50.0), want("est.days", "2"));
     }
 }

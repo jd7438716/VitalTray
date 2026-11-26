@@ -13,20 +13,23 @@ fn wide(s: &str) -> Vec<u16> {
 }
 
 pub fn show_menu() {
-    let (hwnd, autostart_on, tray_on, debug_on, icon_style) = state::with(|st| match st {
+    let (hwnd, autostart_on, tray_on, debug_on, icon_style, follows_system) = state::with(|st| match st {
         Some(s) => (
             s.hwnd,
             s.cfg.autostart,
             s.tray_wanted,
             log::level() >= Level::Debug,
             s.cfg.icon_style.clone(),
+            i18n::is_auto(&s.cfg.lang),
         ),
-        None => (std::ptr::null_mut(), false, false, false, String::new()),
+        None => (std::ptr::null_mut(), false, false, false, String::new(), true),
     });
     if hwnd.is_null() {
         return;
     }
-    if let Some(cmd) = unsafe { menu::show(hwnd, autostart_on, tray_on, debug_on, &icon_style) } {
+    if let Some(cmd) =
+        unsafe { menu::show(hwnd, autostart_on, tray_on, debug_on, &icon_style, follows_system) }
+    {
         log::debug("menu", &format!("command {cmd}"));
         on_command(cmd);
     }
@@ -44,6 +47,7 @@ pub fn on_command(cmd: usize) {
         menu::CMD_TRAY_TOGGLE => toggle_tray(),
         menu::CMD_LOG_LEVEL => toggle_log_level(),
         menu::CMD_ICON_STYLE => cycle_icon_style(),
+        menu::CMD_LANG_AUTO => set_language(None),
         menu::CMD_ABOUT => show_about(),
         menu::CMD_QUIT => {
             let hwnd = state::with(|st| st.map(|s| s.hwnd).unwrap_or(std::ptr::null_mut()));
@@ -51,8 +55,32 @@ pub fn on_command(cmd: usize) {
                 unsafe { windows_sys::Win32::UI::WindowsAndMessaging::DestroyWindow(hwnd) };
             }
         }
+        // 语言子菜单里每一条：CMD_LANG_BASE + 下标
+        cmd if (menu::CMD_LANG_BASE..menu::CMD_LANG_BASE + i18n::Lang::ALL.len()).contains(&cmd) => {
+            set_language(Some(i18n::Lang::ALL[cmd - menu::CMD_LANG_BASE]))
+        }
         _ => {}
     }
+}
+
+/// 切语言：写回配置（`auto` 或标签），立刻生效。
+///
+/// 托盘提示是固定标题、面板下次弹出才重排，所以这里只需要收起已经打开的面板，
+/// 免得新旧两种语言同屏。
+fn set_language(lang: Option<i18n::Lang>) {
+    let tag = lang.map(|l| l.tag().to_string()).unwrap_or_else(|| "auto".to_string());
+    state::with_mut(|st| {
+        if let Some(s) = st {
+            s.cfg.lang = tag.clone();
+            let _ = s.cfg.save(&s.cfg_path);
+        }
+    });
+    i18n::init(&tag);
+    crate::panel::hide();
+    log::info(
+        "i18n",
+        &format!("language -> {tag} (resolved: {} {})", i18n::current().tag(), i18n::current().native_name()),
+    );
 }
 
 pub fn show_about() {
@@ -122,7 +150,6 @@ fn toggle_log_level() {
         }
     });
     log::info("log", &format!("level -> {}", next.name()));
-    let _ = i18n::t("menu.log_level");
 }
 
 fn open_log_dir() {

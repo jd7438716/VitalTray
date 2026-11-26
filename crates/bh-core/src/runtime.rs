@@ -18,9 +18,14 @@ pub fn on_timer() {
 
     let line: Vec<String> = readings
         .iter()
-        .map(|r| match &r.error {
-            Some(e) => format!("{}:{e}", r.domain),
-            None => format!("{}:{}%", r.domain, r.soc),
+        .map(|r| {
+            if r.pending {
+                format!("{}:{}", r.domain, i18n::t("panel.waiting"))
+            } else if let Some(e) = &r.error {
+                format!("{}:{e}", r.domain)
+            } else {
+                format!("{}:{}%", r.domain, r.soc)
+            }
         })
         .collect();
     log::info("poll", &format!("-> [{}]", line.join(", ")));
@@ -41,7 +46,7 @@ pub fn on_timer() {
         log::warn("battery", &format!("{} {}%", i18n::t("low.log"), a.soc));
         state::with_mut(|st| {
             if let Some(t) = st.and_then(|s| s.tray.as_mut()) {
-                let body = format!("{}{}", a.name, i18n::t("low.body").replace("{}", &a.soc.to_string()));
+                let body = i18n::tf("low.body", &[("name", &a.name), ("soc", &a.soc.to_string())]);
                 t.balloon(i18n::t("low.title"), &body);
             }
         });

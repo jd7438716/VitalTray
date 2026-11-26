@@ -80,7 +80,7 @@ pub fn build() -> Model {
             Section { title: i18n::t("panel.system"), rows: system_rows(&snap, info.cpu.as_str()) },
             Section { title: i18n::t("panel.devices"), rows: device_rows(&readings, low) },
         ],
-        updated: format!("{} {}", i18n::t("panel.updated"), util::clock()),
+        updated: i18n::tf("panel.updated", &[("time", &util::clock())]),
     }
 }
 
@@ -118,11 +118,12 @@ fn system_rows(snap: &Snapshot, cpu_name: &str) -> Vec<Row> {
         Some(disk) => Row {
             icon: Icon::Disk,
             title: format!("{} ({}:)", i18n::t("panel.disk"), disk.letter),
-            detail: format!(
-                "{} {:.0} / {:.0} GB",
-                i18n::t("panel.free"),
-                disk.free_mb as f64 / 1024.0,
-                disk.total_mb as f64 / 1024.0
+            detail: i18n::tf(
+                "panel.disk_detail",
+                &[
+                    ("free", &format!("{:.0}", disk.free_mb as f64 / 1024.0)),
+                    ("total", &format!("{:.0}", disk.total_mb as f64 / 1024.0)),
+                ],
             ),
             value: temp_text(disk.temp_c),
             tone: temp_tone_of(disk.temp_c),
@@ -152,7 +153,7 @@ fn device_rows(readings: &[DeviceReading], low: u8) -> Vec<Row> {
     live.into_iter()
         .take(MAX_DEVICES)
         .map(|r| {
-            let (value, tone) = device_value(r.soc, r.charging, r.stale, r.error.as_deref(), low);
+            let (value, tone) = device_value(r.soc, r.charging, r.stale, r.pending, r.error.as_deref(), low);
             Row {
                 icon: icon_of(r.glyph),
                 title: i18n::device_label(r.glyph).to_string(),
@@ -185,12 +186,19 @@ fn icon_of(glyph: Glyph) -> Icon {
 /// "85%" / "85% ⚡" / "待上报" / "—"，以及对应颜色语义。
 ///
 /// 电量色与托盘同口径：<= 低电阈值红、> 80% 绿、充电中蓝、正常中性；
-/// 上次读数 / 读不到用灰。
-pub fn device_value(soc: u8, charging: bool, stale: bool, error: Option<&str>, low: u8) -> (String, Tone) {
-    if let Some(text) = error {
-        if text.contains("等待") {
-            return (i18n::t("panel.waiting").to_string(), Tone::Dim);
-        }
+/// 上次读数 / 读不到 / 待上报用灰。
+pub fn device_value(
+    soc: u8,
+    charging: bool,
+    stale: bool,
+    pending: bool,
+    error: Option<&str>,
+    low: u8,
+) -> (String, Tone) {
+    if pending {
+        return (i18n::t("panel.waiting").to_string(), Tone::Dim);
+    }
+    if error.is_some() {
         return ("—".into(), Tone::Dim);
     }
     if stale {
@@ -274,18 +282,18 @@ mod tests {
     #[test]
     fn device_value_states() {
         // 85%：> 80，绿；充电中仍是绿（电量优先），但值里带 ⚡
-        assert_eq!(device_value(85, false, false, None, 20).0, "85%");
-        assert_eq!(device_value(85, false, false, None, 20).1, Tone::Green);
-        assert_eq!(device_value(85, true, false, None, 20).1, Tone::Green);
+        assert_eq!(device_value(85, false, false, false, None, 20).0, "85%");
+        assert_eq!(device_value(85, false, false, false, None, 20).1, Tone::Green);
+        assert_eq!(device_value(85, true, false, false, None, 20).1, Tone::Green);
         // 55% 充电中：中间档才显示蓝
-        assert_eq!(device_value(55, true, false, None, 20).1, Tone::Accent);
-        assert_eq!(device_value(55, false, false, None, 20).1, Tone::Neutral);
+        assert_eq!(device_value(55, true, false, false, None, 20).1, Tone::Accent);
+        assert_eq!(device_value(55, false, false, false, None, 20).1, Tone::Neutral);
         // 20% 及以下：红（充电中也红，直到充过阈值）
-        assert_eq!(device_value(20, false, false, None, 20).1, Tone::Red);
-        assert_eq!(device_value(15, true, false, None, 20).1, Tone::Red);
-        assert_eq!(device_value(85, false, true, None, 20).1, Tone::Dim);
-        assert_eq!(device_value(0, false, false, Some("打开失败"), 20).0, "—");
-        assert_eq!(device_value(0, false, false, Some("等待设备上报（用一下设备）"), 20).0, i18n::t("panel.waiting"));
+        assert_eq!(device_value(20, false, false, false, None, 20).1, Tone::Red);
+        assert_eq!(device_value(15, true, false, false, None, 20).1, Tone::Red);
+        assert_eq!(device_value(85, false, true, false, None, 20).1, Tone::Dim);
+        assert_eq!(device_value(0, false, false, false, Some("open failed"), 20).0, "—");
+        assert_eq!(device_value(0, false, false, true, None, 20).0, i18n::t("panel.waiting"));
     }
 
     #[test]
@@ -308,6 +316,7 @@ mod tests {
             soc,
             charging: false,
             error: None,
+            pending: false,
             stale: false,
             ghost,
         }

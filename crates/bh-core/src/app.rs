@@ -23,6 +23,16 @@ pub fn run() -> i32 {
         }
     }
     let args = Args::parse(std::env::args().skip(1));
+    let dir = paths::data_dir(args.portable);
+    let _ = paths::ensure_dir(&dir);
+    let cfg_path = args
+        .config
+        .as_ref()
+        .map(PathBuf::from)
+        .unwrap_or_else(|| paths::config_file(&dir));
+    let mut cfg = Config::load(&cfg_path);
+    // 语言必须在任何输出之前定下来：--help / --once / --sysmon 的文案都跟着界面语言走。
+    i18n::init(&cfg.lang);
     if args.help {
         print!("{}", Args::help_text());
         return 0;
@@ -34,8 +44,6 @@ pub fn run() -> i32 {
     if args.self_test {
         return crate::selftest::run(&args);
     }
-    let dir = paths::data_dir(args.portable);
-    let _ = paths::ensure_dir(&dir);
     let capture_dir = dir.join("capture");
     if args.dump {
         return probe::dump_hid();
@@ -57,12 +65,6 @@ pub fn run() -> i32 {
         return probe::sysmon_once();
     }
 
-    let cfg_path = args
-        .config
-        .as_ref()
-        .map(PathBuf::from)
-        .unwrap_or_else(|| paths::config_file(&dir));
-    let mut cfg = Config::load(&cfg_path);
     let level = args
         .log_level
         .as_deref()
@@ -84,7 +86,6 @@ pub fn run() -> i32 {
     };
 
     let exe = std::env::current_exe().unwrap_or_else(|_| PathBuf::from("batteryhub.exe"));
-    crate::i18n::init(&cfg.lang);
     if !cfg_path.exists() {
         let _ = cfg.save(&cfg_path);
         log::info("config", "default written");

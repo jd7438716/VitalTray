@@ -70,7 +70,10 @@ pub struct DeviceReading {
     pub brand: Option<String>,
     pub soc: u8,
     pub charging: bool,
+    /// 读失败的原因（只进日志/排障输出，面板不显示原文）。
     pub error: Option<String>,
+    /// 这条通道还没上报过：面板显示“待上报”，汇总时当作没有读数。
+    pub pending: bool,
     pub stale: bool,
     /// 从未成功上报过该通道（接收器常驻的幽灵通道）：面板不展示，排障命令仍可见。
     pub ghost: bool,
@@ -80,7 +83,7 @@ fn system_device() -> DeviceInfo {
     DeviceInfo {
         vendor_id: 0,
         product_id: 0,
-        product: "本机电池".to_string(),
+        product: crate::i18n::device_label(Glyph::Laptop).to_string(),
         serial: None,
         usage_page: 0,
         usage: 0,
@@ -172,6 +175,7 @@ pub fn collect_once() -> Vec<DeviceReading> {
             soc: 0,
             charging: false,
             error: None,
+            pending: false,
             stale: false,
             ghost: false,
         };
@@ -211,6 +215,7 @@ pub fn collect_once() -> Vec<DeviceReading> {
             soc: 0,
             charging: false,
             error: None,
+            pending: false,
             stale: false,
             ghost: !probe.ok_once,
         };
@@ -225,10 +230,10 @@ pub fn collect_once() -> Vec<DeviceReading> {
                     }
                 }
                 if row.soc == 0 && row.error.is_none() {
-                    row.error = Some("等待设备上报（用一下设备）".into());
+                    row.pending = true;
                 }
             } else {
-                row.error = Some("等待设备上报（用一下设备）".into());
+                row.pending = true;
             }
             out.push(row);
             continue;
@@ -263,7 +268,7 @@ fn run_jobs(jobs: Vec<Job>) -> Vec<DeviceReading> {
                 let mut h = h;
                 let res = match h.as_mut() {
                     Some(io) => job.proto.read(&job.info, io, job.budget),
-                    None => Err(DriverError::Io("打开失败".into())),
+                    None => Err(DriverError::Io("open failed".into())),
                 };
                 (job, h, res)
             }));
@@ -302,7 +307,7 @@ fn run_jobs(jobs: Vec<Job>) -> Vec<DeviceReading> {
                             g.insert(key, h);
                         }
                     }
-                    _ => row.error = Some("等待设备上报（用一下设备）".into()),
+                    _ => row.pending = true,
                 }
             }
             Err(e) => {

@@ -290,6 +290,41 @@
   `tools/install.ps1` 覆盖安装后，开始菜单快捷方式取到新图标（绿电池 + 快捷方式角标）。
 - 注意：已发布的 v1.1.0 exe 不会自己变，要重新打 tag 才会更新下载页。
 
+## 2026-11-26 · 多语言：跟随系统 + 10 种语言
+
+- 需求：界面做成多语言，最好按系统语言自动解析。
+- 现状：M4 只做了「中/英两套字符串 + 配置里写死选一个」，`lang` 默认 `zh-CN`，没有语言菜单，
+  也没有系统检测；CLI 输出、配置注释、面板窗口标题、低电气泡、托盘“待上报”文案都是硬编码中文。
+- 决策：
+  - **默认 `auto`**：`GetUserDefaultUILanguage()` 取用户**首选显示语言**（不是区域格式），
+    中文按子语言分简繁（1/3/5 → 繁體，2/4 → 简体）；认不出的一律英文，绝不出现半截中文。
+  - **10 种语言**：en / zh-CN / zh-TW / ja / ko / de / fr / es / ru / pt-BR。语言文件一个语言一个，
+    拆 `ui/`（界面）与 `cli/`（命令行）两层，加语言 = 加两个文件 + 几处 match（见 `docs/i18n.md`）。
+  - **菜单可切**：托盘右键 → 语言 →「跟随系统」+ 10 项（各用母语写，不翻译），打勾表示当前生效；
+    切换立刻 `i18n::init` 并写回 `[ui] lang`，同时收起已打开的面板（免得新旧语言同屏）。
+  - **命令行也跟随**：`--help` 从 18 行写死中文改成 i18n 选项表；`--once/--dump/--sysmon/--watch/--capture-report`
+    的标签走 `cli/` 表，设备名、VID/PID、报文十六进制这些事实不翻译。`--self-test` 的 PASS/FAIL 固定英文（机器可读）。
+  - **exe 版本资源**：一个 VERSIONINFO 挂 10 个 `StringFileInfo` 块（`040904B0` …），
+    `VarFileInfo` 的 `Translation` 列全；资源管理器按系统语言挑，属性页不再是中文“文件说明”。
+  - **面板字体**：`i18n::ui_font()` 按语言给 CreateFontW 的字体名（YaHei / Yu Gothic UI / Malgun Gothic / Segoe UI），
+    韩文与日文不再依赖字体回退。
+- 顺手修掉的隐患：
+  - `DeviceReading.pending`：以前“等待设备上报（用一下设备）”是塞进 `error` 的中文串，面板拿
+    `text.contains("等待")` 判断——文案一翻译就失效。现在改成独立字段，`status::aggregate` /
+    `monitor::observe` 都把它当“没有读数”（否则会被当成 0% 电量进汇总）。
+  - 配置注释与 `about` 文案改成带 `{name}` 占位符的模板（`i18n::tf`），不再在代码里拼句子。
+- 老配置迁移：v1.1.1 的 `lang=zh-CN` 是默认值而非用户选择（当时没有语言入口），
+  读到**没有 `[meta] schema`** 的配置且 `lang=zh-CN` 时按 `auto` 处理；保存写 `[meta] schema=2`，
+  之后用户明确选的语言不会被再改回 `auto`。
+- 验证：`cargo test` 62 项全绿（新增 8 个 i18n 测试 + 1 个配置迁移测试，含“每个语言是否漏键”
+  “占位符是否齐全”）；
+  `check-size.ps1` 89 个 `.rs` 0 超限 0 警告；`check-exe.ps1` 5 项 PASS；
+  实跑 10 种语言的 `--help` 全部正确（本机系统 zh-CN → 默认即中文），
+  `--sysmon` 日文、`--capture-report` 法文输出正常；用 `VerQueryValue` 逐条查 exe 的 10 个
+  `FileDescription` 都能取到。
+- 未做（记在 `docs/i18n.md`）：日志与设备名不翻译；`--self-test` 固定英文；界面语言切换不重启进程、
+  但已打开的面板会先收起（下次弹出用新语言）。
+
 ## 待办
 
 - 多显示器任务栏（当前只挂主任务栏）。

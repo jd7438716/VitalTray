@@ -13,10 +13,14 @@ pub struct Config {
     pub icon_style: String,
     pub start_minimized: bool,
     pub refresh_secs: u32,
+    /// 界面语言：`auto`（默认，跟随 Windows）或 `en` / `zh-CN` / `zh-TW` / `ja` …
     pub lang: String,
     /// 抓帧白名单（VID 十六进制列表，如 `09da,24ae`）；空 = 不抓。
     pub capture_vids: String,
 }
+
+/// 配置格式版本。v1（没有 `[meta]` 段）里 `lang=zh-CN` 是写死的默认值，不是用户选的。
+const SCHEMA: &str = "2";
 
 impl Default for Config {
     fn default() -> Self {
@@ -29,7 +33,7 @@ impl Default for Config {
             icon_style: "battery".into(),
             start_minimized: true,
             refresh_secs: 60,
-            lang: "zh-CN".into(),
+            lang: "auto".into(),
             capture_vids: String::new(),
         }
     }
@@ -63,13 +67,18 @@ impl Config {
                 cfg.lang = v.clone();
             }
         }
+        // v1 没有 [meta] schema 标记，那时 `lang=zh-CN` 是硬编码默认值（没有语言菜单），
+        // 不是用户的选择 —— 迁到 auto，让“跟随系统”对老配置也生效。
+        if !map.contains_key("meta.schema") && cfg.lang.eq_ignore_ascii_case("zh-CN") {
+            cfg.lang = "auto".into();
+        }
         if let Some(v) = map.get("capture.vids") { cfg.capture_vids = v.clone(); }
         cfg
     }
 
     pub fn save(&self, path: &Path) -> std::io::Result<()> {
         let text = format!(
-            "; BatteryHub 配置（改完重启生效）\n[system]\nautostart={}\ntray={}\nhistory={}\nlow_battery={}\nlog_level={}\nstart_minimized={}\n\n[poll]\nrefresh_secs={}\n\n[ui]\nlang={}\nicon_style={}\n\n; 逆向用：只抓这些厂商(VID, 16 进制)的厂商页 HID 报文，留空则不抓\n[capture]\nvids={}\n",
+            "{header}\n[meta]\nschema={schema}\n\n[system]\nautostart={}\ntray={}\nhistory={}\nlow_battery={}\nlog_level={}\nstart_minimized={}\n\n[poll]\nrefresh_secs={}\n\n[ui]\nlang={}\nicon_style={}\n\n{capture}\n[capture]\nvids={}\n",
             b(self.autostart),
             b(self.tray),
             b(self.history),
@@ -79,7 +88,10 @@ impl Config {
             self.refresh_secs,
             self.lang,
             self.icon_style,
-            self.capture_vids
+            self.capture_vids,
+            header = crate::i18n::t("config.header"),
+            schema = SCHEMA,
+            capture = crate::i18n::t("config.capture"),
         );
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent)?;
@@ -140,5 +152,26 @@ mod tests {
         c.save(&path).unwrap();
         let back = Config::load(&path);
         assert_eq!(back, c);
+    }
+
+    #[test]
+    fn legacy_zh_cn_default_migrates_to_auto() {
+        let dir = std::env::temp_dir().join("bh-config-legacy");
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        // v1：没有 [meta]，lang=zh-CN 是写死的默认值 → 迁到 auto
+        let legacy = dir.join("legacy.ini");
+        std::fs::write(&legacy, "[system]\nautostart=1\n\n[ui]\nlang=zh-CN\n").unwrap();
+        assert_eq!(Config::load(&legacy).lang, "auto");
+
+        // v2：用户明确写了 zh-CN → 保留
+        let modern = dir.join("modern.ini");
+        std::fs::write(&modern, "[meta]\nschema=2\n\n[ui]\nlang=zh-CN\n").unwrap();
+        assert_eq!(Config::load(&modern).lang, "zh-CN");
+
+        // 老配置里显式选了别的语言也保留
+        let english = dir.join("english.ini");
+        std::fs::write(&english, "[ui]\nlang=en\n").unwrap();
+        assert_eq!(Config::load(&english).lang, "en");
     }
 }

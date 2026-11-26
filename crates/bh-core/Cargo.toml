@@ -16,6 +16,7 @@ bh-plugin-laptop = { path = "../../plugins/bh-plugin-laptop" }
 bh-plugin-bluetooth = { path = "../../plugins/bh-plugin-bluetooth" }
 windows-sys = { version = "0.61", features = [
     "Win32_Foundation",
+    "Win32_Globalization",
     "Win32_UI_WindowsAndMessaging",
     "Win32_UI_Shell",
     "Win32_System_Registry",

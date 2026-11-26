@@ -32,7 +32,7 @@ pub fn create_window(proc: WNDPROC) -> Option<HWND> {
         let hwnd = CreateWindowExW(
             WS_EX_LAYERED | WS_EX_TOOLWINDOW | WS_EX_TOPMOST,
             class.as_ptr(),
-            wide("BatteryHub 状态").as_ptr(),
+            wide(crate::i18n::t("panel.title")).as_ptr(),
             WS_POPUP,
             0,
             0,

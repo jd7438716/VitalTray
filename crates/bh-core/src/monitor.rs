@@ -30,7 +30,7 @@ impl Monitor {
     pub fn observe(&mut self, readings: &[DeviceReading], threshold: u8, now: i64) -> Vec<Alert> {
         let mut alerts = Vec::new();
         for r in readings {
-            if r.error.is_some() || r.stale {
+            if r.error.is_some() || r.stale || r.pending {
                 continue;
             }
             let _ = self.store.record(&r.key, Sample { ts: now, soc: r.soc, charging: r.charging });

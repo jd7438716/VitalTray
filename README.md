@@ -53,7 +53,7 @@ cargo build --release
 - **状态色**：绿 = 所有设备 >80%；中性 = 20–80%；红 = 任一设备 ≤ 低电阈值（默认 20%）；
   蓝 = 充电中；灰 = 上次读数 / 无数据。细则见 [docs/status-colors.md](docs/status-colors.md)。
 - **右键托盘图标** → 原生菜单做功能：立即刷新 / 打开日志目录 / 开机自启 / 托盘图标开关 /
-  图标样式 / 调试日志 / 关于 / 退出。
+  图标样式 / 调试日志 / 语言 / 关于 / 退出。
 - **鼠标悬停托盘图标** → 提示只显示标题 `BatteryHub`；电量、续航都在左键面板里，提示不重复数字。
 - 面板里**只有信息、没有按钮**：点任意处、按 `Esc`、再点一次托盘 → 收起；
   在面板上按右键也是收起面板、把菜单交出来（左键=看，右键=做，两边不混）。
@@ -61,6 +61,15 @@ cargo build --release
   在面板上右键即可把菜单拿回来（不用去改配置文件）。
 - 第二次双击 exe **不会**再起一个进程，而是把已经在跑的那个叫出来（以前是静默退出、看起来像没反应）。
 - **任务栏文本已移除**：按用户反馈，不再往任务栏里塞文字；所有信息进面板。
+
+## 语言
+
+界面与命令行支持 **10 种语言**（英 / 简中 / 繁中 / 日 / 韩 / 德 / 法 / 西 / 俄 / 葡-BR），
+**默认跟随 Windows 的界面语言**；托盘右键 → 语言 可随时手动切换（立即生效），
+也可以在 `config.ini` 里写 `[ui] lang=auto`（默认）或 `en` / `zh-CN` / `ja` 等。
+
+面板按语言挑字体（YaHei / Yu Gothic UI / Malgun Gothic / Segoe UI），exe 的「文件说明」
+也按系统语言显示。细则与“加一种语言”的步骤见 [docs/i18n.md](docs/i18n.md)。
 
 ## 显示内容与数据来源
 
@@ -113,6 +122,8 @@ theme.rs    明暗主题配色
 
 系统采样在 `crates/bh-core/src/sysmon/`（独立线程每 2 秒一次，UI 只读快照）。
 
+多语言在 `crates/bh-core/src/i18n/`（`ui/` 界面文案、`cli/` 命令行文案，一个语言一个文件；加语言见 [docs/i18n.md](docs/i18n.md)）。
+
 ## 插件模型
 
 插件 = **设备域**（鼠标 / 键盘 / 笔记本 / 以后的耳机、手柄、手机），一个域一个 crate：
@@ -134,6 +145,8 @@ impl DeviceDomain for Domain {
 - 自启：默认写 `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`，不碰 HKLM、不要管理员；
   菜单里可随时开关；`--no-autostart` 表示本次不改注册表。
 - 面板自动读取当前系统明暗主题；多显示器时按鼠标所在显示器的 DPI 与工作区摆位。
+- 界面语言：`[ui] lang=auto`（默认，跟随 Windows）或 `en` / `zh-CN` / `zh-TW` / `ja` / `ko` / `de` / `fr` / `es` / `ru` / `pt-BR`；
+  托盘右键 → 语言 也能改（立即生效），见 [docs/i18n.md](docs/i18n.md)。
 - 命令行：`--no-tray`、`--no-capture`、`--portable`、`--config <path>`、`--debug`、`--self-test`、`--sysmon`、`--panel`。
 
 ## 日志（开发日志功能）
@@ -160,7 +173,8 @@ impl DeviceDomain for Domain {
 - **M1 ✅** HID 枚举 / 本机电池 / 蓝牙 / Logitech HID++ / 轮询
 - **M2 ✅** 任务栏文本 widget（**M7 已下线**）
 - **M3 ✅** 历史 / 续航估算 / 低电通知
-- **M4 ✅** i18n / 安装包 / 更多驱动
+- **M4 ✅** i18n（中 / 英）/ 安装包 / 更多驱动
+- **M9 ✅** 多语言：10 种语言 + 跟随系统自动识别 + 菜单切换（`lang=auto`，见 [docs/i18n.md](docs/i18n.md)）
 - **M5 ✅** Rapoo 私有协议实测接入
 - **M6 ✅** 分级开发日志
 - **M7 ✅** 竖排状态面板：CPU/GPU/内存/磁盘/温度、品牌型号、图标、菜单式交互
