@@ -1,0 +1,40 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/bh-api",
+    "crates/bh-core",
+    "crates/bh-hid",
+    "crates/bh-proto-logitech",
+    "crates/bh-proto-rapoo",
+    "crates/bh-app",
+    "plugins/bh-plugin-mouse",
+    "plugins/bh-plugin-keyboard",
+    "plugins/bh-plugin-laptop",
+    "plugins/bh-plugin-bluetooth",
+]
+
+[workspace.package]
+version = "0.0.1"
+edition = "2021"
+license = "MIT"
+rust-version = "1.88"
+
+[workspace.dependencies]
+bh-api = { path = "crates/bh-api" }
+windows = { version = "0.62", features = [
+    "Win32_Foundation",
+    "Win32_UI_WindowsAndMessaging",
+    "Win32_UI_Shell",
+    "Win32_System_Registry",
+    "Win32_System_Threading",
+    "Win32_UI_Input_KeyboardAndMouse",
+    "Win32_System_LibraryLoader",
+    "Win32_Graphics_Gdi",
+] }
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

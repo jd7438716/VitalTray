@@ -1,0 +1,12 @@
+[package]
+name = "bh-app"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "batteryhub"
+path = "src/main.rs"
+
+[dependencies]
+bh-core = { path = "../bh-core" }

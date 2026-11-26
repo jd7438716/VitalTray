@@ -1,0 +1,10 @@
+[package]
+name = "bh-plugin-keyboard"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+bh-api.workspace = true
+bh-proto-logitech = { path = "../../crates/bh-proto-logitech" }
+bh-proto-rapoo = { path = "../../crates/bh-proto-rapoo" }

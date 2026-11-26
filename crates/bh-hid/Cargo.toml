@@ -1,0 +1,9 @@
+[package]
+name = "bh-hid"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+bh-api.workspace = true
+hidapi = "2.6"

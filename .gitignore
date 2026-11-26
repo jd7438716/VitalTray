@@ -1,0 +1,18 @@
+# ---- 构建产物 ----
+target/
+dist/
+*.exe
+*.pdb
+*.log
+
+# ---- 编辑器 / IDE ----
+.idea/
+.vscode/
+
+# ---- 本地调试产物（截图、日志、临时脚本）----
+tmp/
+
+# ---- 调研素材：第三方仓库 clone + 参考二进制，不入库 ----
+# 8 个子目录各自带 .git（fork-ferloom / fork-hassani / battery-hub ...），
+# 入库会变成嵌套仓库；另有 research/bin 约 24 MB 二进制。
+research/
