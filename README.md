@@ -31,7 +31,7 @@ Rust + 原生 Win32，零第三方运行时，MIT。
 - **SmartScreen**：exe 未签名，首次运行可能提示「Windows 已保护你的电脑」→ 更多信息 → 仍要运行；
   介意的话用上面的 SHA256 自行核对。
 
-当前版本：**1.1.0**（变更见 [CHANGELOG.md](CHANGELOG.md)）。
+当前版本：**1.1.1**（变更见 [CHANGELOG.md](CHANGELOG.md)）。
 
 ## 从源码构建
 
