@@ -53,7 +53,7 @@
 | 开机自启值 | `HKCU\...\Run\BatteryHub` | `HKCU\...\Run\VitalTray` |
 | 单实例互斥体 | `Local\BatteryHub.SingleInstance` | `Local\VitalTray.SingleInstance` |
 | 安装目录 / 快捷方式 | `Programs\BatteryHub` / `BatteryHub.lnk` | `Programs\VitalTray` / `VitalTray.lnk` |
-| GitHub 仓库 | `jd7438716/battery-hub` | `jd7438716/vital-tray`（GitHub 自动保留旧 URL 重定向） |
+| GitHub 仓库 | `jd7438716/battery-hub` | `jd7438716/VitalTray`（GitHub 自动保留旧 URL 重定向） |
 | CLI 用法文案 / i18n 全部 10 种语言 | batteryhub.exe / BatteryHub | vitaltray.exe / VitalTray |
 
 **刻意不改**：内部 crate 名（`bh-api` / `bh-core` / `bh-app` / `bh-proto-*` …）。

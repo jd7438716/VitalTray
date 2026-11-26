@@ -2,7 +2,7 @@
 
 **English** ｜ [中文](README.md)
 
-[![CI](https://github.com/jd7438716/vital-tray/actions/workflows/ci.yml/badge.svg)](https://github.com/jd7438716/vital-tray/actions/workflows/ci.yml)
+[![CI](https://github.com/jd7438716/VitalTray/actions/workflows/ci.yml/badge.svg)](https://github.com/jd7438716/VitalTray/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 A Windows 10/11 tray tool: **wireless peripheral battery levels + system temperature panel**
@@ -26,7 +26,7 @@ A Windows 10/11 tray tool: **wireless peripheral battery levels + system tempera
 
 ## Download and install
 
-Grab `vitaltray.exe` from [Releases](https://github.com/jd7438716/vital-tray/releases) and double-click
+Grab `vitaltray.exe` from [Releases](https://github.com/jd7438716/VitalTray/releases) and double-click
 it (GUI subsystem — no console window flashes).
 
 - **Verify the download**: each release ships `SHA256SUMS.txt`,

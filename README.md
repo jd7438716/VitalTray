@@ -2,7 +2,7 @@
 
 **中文** ｜ [English](README.en.md)
 
-[![CI](https://github.com/jd7438716/vital-tray/actions/workflows/ci.yml/badge.svg)](https://github.com/jd7438716/vital-tray/actions/workflows/ci.yml)
+[![CI](https://github.com/jd7438716/VitalTray/actions/workflows/ci.yml/badge.svg)](https://github.com/jd7438716/VitalTray/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 Windows 10/11 托盘工具：**无线外设电量 + 整机温度面板**（CPU / GPU / 硬盘温度）。
@@ -22,7 +22,7 @@ Rust + 原生 Win32，零第三方运行时，MIT。
 
 ## 下载与安装
 
-到 [Releases](https://github.com/jd7438716/vital-tray/releases) 下载 `vitaltray.exe`，双击即可运行
+到 [Releases](https://github.com/jd7438716/VitalTray/releases) 下载 `vitaltray.exe`，双击即可运行
 （GUI 子系统，不会弹黑窗）。
 
 - **校验下载**：发布页 `SHA256SUMS.txt` 里有哈希，
