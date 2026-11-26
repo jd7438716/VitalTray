@@ -48,28 +48,24 @@ pub fn on_timer() {
     refresh();
 }
 
-/// 把当前读数写成托盘提示与托盘图标。
+/// 托盘悬停提示：只显示标题，电量与续航都进面板，提示里不塞数字。
+fn tip_text() -> String {
+    i18n::t("tray.title").to_string()
+}
+
+/// 把当前读数写成托盘提示（固定标题）与托盘图标。
 pub fn refresh() {
     let (tip, worst) = state::with(|st| {
         let Some(st) = st else {
             return (String::new(), None);
         };
-        if st.readings.is_empty() {
-            return (i18n::t("tooltip.none").to_string(), None);
-        }
-        let parts: Vec<String> = st
-            .readings
-            .iter()
-            .take(3)
-            .map(|r| format!("{}{}", r.summary(), st.monitor.tooltip_suffix(&r.key)))
-            .collect();
         let worst = st
             .readings
             .iter()
             .filter(|r| r.error.is_none())
             .min_by_key(|r| r.soc)
             .map(|r| (r.soc, r.charging));
-        (format!("BatteryHub — {}", parts.join(" · ")), worst)
+        (tip_text(), worst)
     });
 
     if tip.is_empty() {

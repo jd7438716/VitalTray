@@ -132,6 +132,21 @@
 - 门禁：58 个 `.rs` 全 ≤400 行（`panel/mod.rs` 332 → 244 行、`model.rs` 349 → 279 行）；
   46 个单测全绿；0 警告。
 
+## 2026-11-26 · 托盘悬停提示只留标题
+
+- 反馈：鼠标悬停托盘图标时，提示里塞着电量（`BatteryHub — 本机 78%⚡ · 鼠标 — · 键盘 —`）。
+  电量图标上已经能看出来，提示里再报一遍纯属重复，还和左键面板打架。
+- 决策：tooltip **只显示标题 `BatteryHub`**，电量 / 续航 / 缺数据全部进左键面板，提示里不出现任何数字。
+  - `i18n` 新增 `tray.title`（中英同值 `BatteryHub`）；`tooltip.none`（「未发现设备」）和启动期的
+    「正在扫描设备」两种临时文案一起下线——提示不再随读数变化。
+  - `runtime::refresh()` 只保留“取最差电量 → 画图标”，`tip` 恒为标题；托盘新建（`app.rs` 启动、
+    右键「显示托盘图标」重建）也走同一个 `tray.title`，三处口径统一。
+- 保留：`Monitor::estimate_for` / `tooltip_suffix`、`DeviceReading::summary` 没删，续航估算仍按 M3
+  逻辑落库，留给以后的面板行用（当前不在提示里展示）。
+- 验证：`cargo test` 46 项全绿、0 警告；`--self-test` PASS；`tools/check-size.ps1` 58 文件 0 超限；
+  以 `--log-level debug` 实跑，日志里是 `[ui] refresh: BatteryHub`（不再带百分比）；
+  `install.ps1` 重装到 `%LOCALAPPDATA%\Programs\BatteryHub` 并重启，新进程已接管托盘。
+
 ## 待办
 
 - 多显示器任务栏（当前只挂主任务栏）。

@@ -4,7 +4,7 @@ use crate::commands;
 use crate::log::{self, Level};
 use crate::poller::{self, DeviceReading};
 use crate::state::{self, State};
-use crate::{autostart, cli::Args, config::Config, paths, plugins, probe, runtime, single_instance, tray, window, VERSION};
+use crate::{autostart, cli::Args, config::Config, i18n, paths, plugins, probe, runtime, single_instance, tray, window, VERSION};
 use std::path::PathBuf;
 use windows_sys::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
 use windows_sys::Win32::UI::WindowsAndMessaging::{
@@ -103,7 +103,7 @@ pub fn run() -> i32 {
 
     let tray_wanted = cfg.tray && !args.no_tray;
     let tray = if tray_wanted {
-        let mut t = tray::TrayIcon::new(hwnd, 1, "BatteryHub — 正在扫描设备");
+        let mut t = tray::TrayIcon::new(hwnd, 1, i18n::t("tray.title"));
         if t.add() {
             log::info("tray", "icon added");
             Some(t)
