@@ -35,7 +35,9 @@
 
 `crates/bh-core/src/i18n/cli/` 下 de / en / es / fr / ja / ko / pt_br / ru / zh_cn / zh_tw，新增键统一落在 **第 16 行**（`cli.opt.panel` 之后、`cli.opt.watch` 之前）。
 
-**需要如实记录的副作用**：其中 6 个文件（de.rs、en.rs、fr.rs、pt_br.rs、zh_cn.rs、zh_tw.rs）首行 UTF-8 BOM（`\ufeff`）被移除，diff 里表现为首行注释的 −1/+1。这是编辑工具写回时的规范化，不影响 Rust 编译（BOM 在源码首行本就无意义）；es.rs / ja.rs / ko.rs / ru.rs 原本无 BOM，故只有 +1 行。
+**需要如实记录的副作用**：其中 6 个文件（de.rs、en.rs、fr.rs、pt_br.rs、zh_cn.rs、zh_tw.rs）首次编辑时首行
+UTF-8 BOM（`\ufeff`）被写回工具移除，diff 里一度表现为首行注释的 −1/+1（不影响 Rust 编译，BOM 对源码无语义）。
+提交前已把这 6 个 BOM 按父版本原样补回并 `--amend` 进同一提交，因此**最终 diff 是 10 个文件各 +1 行**，没有首行噪声。
 
 ## 3. 文档改动（4 个文件）
 
@@ -88,3 +90,7 @@ gits/20261126-start-minimized/decision-chain.md
 
 本步实际核对过的锚点（`git -C D:/work/batteryhub` 只读，2026-11-26 17:4x）：
 `HEAD = b6afb01`、`git diff --numstat` cli.rs `32/0` / app.rs `19/3`、`git status -uall --porcelain` 16 M + 3 ??、`Cargo.toml`/`Cargo.lock` 无变更；`config.rs:14/34/55-56/81/87`、`state.rs:21/34`、10 个 i18n 文件 `cli.opt.minimized` 均在 **16 行**（其中 6 个 BOM 文件 de/en/fr/pt_br/zh_cn/zh_tw 在 diff 里表现为首行 −1/+1）；README/README.en/CHANGELOG/DEVLOG 引用行号逐一 `Select-String` 实查。
+
+**提交后补记**：首版提交 `9199b4b` 带上了 6 个文件的首行 BOM 移除（diff 噪声）；主 agent 已把 BOM 原样补回并
+`git commit --amend --no-edit`，最终提交为 `1a650f5 fix(startup): 打开只驻留托盘，不再弹面板`，内容与首版一致、
+i18n 均只剩 +1 行。本条如实记录，避免与后续 `git log` 里的哈希对不上。

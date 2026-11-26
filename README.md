@@ -37,7 +37,7 @@ Rust + 原生 Win32，零第三方运行时，MIT。
 - **SmartScreen**：exe 未签名，首次运行可能提示「Windows 已保护你的电脑」→ 更多信息 → 仍要运行；
   介意的话用上面的 SHA256 自行核对。
 
-当前版本：**1.2.0**（变更见 [CHANGELOG.md](CHANGELOG.md)）。
+当前版本：**1.2.1**（变更见 [CHANGELOG.md](CHANGELOG.md)）。
 
 ## 从 BatteryHub 升级
 
@@ -208,6 +208,7 @@ impl DeviceDomain for Domain {
 - **M7 ✅** 竖排状态面板：CPU/GPU/内存/磁盘/温度、品牌型号、图标、菜单式交互
 - **v1.0.0 ✅** 首个公开版本（2026-11-26），见 [CHANGELOG.md](CHANGELOG.md)
 - **v1.2.0 ✅**（2026-11-26）10 种语言 + 产品更名 VitalTray + 旧配置/自启项自动迁移（[ADR 0004](docs/adr/0004-rename-to-vitaltray.md)）
+- **v1.2.1 ✅**（2026-11-26）打开只驻留托盘：启动与二次打开都不再弹面板（[CHANGELOG.md](CHANGELOG.md)）
 - **待办**：Logitech 接收器多设备配对表；校准向导 UI；磁盘 SMART 温度（需要管理员，暂不做）。
 
 ## 许可
