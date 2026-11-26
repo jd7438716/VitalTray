@@ -325,6 +325,25 @@
 - 未做（记在 `docs/i18n.md`）：日志与设备名不翻译；`--self-test` 固定英文；界面语言切换不重启进程、
   但已打开的面板会先收起（下次弹出用新语言）。
 
+## 2026-11-26 · 字体合规：只引用系统字体 + 入库门禁
+
+- 起因：面板按语言换字体后被问「乱用字体犯不犯法」。先核对实现：`panel/gdi.rs` 只把**字体家族名**
+  交给 `CreateFontW`，字形由 Windows 从 `%WINDIR%\Fonts` 提供——程序不读、不复制、不分发字体文件。
+- 定性：这是系统授权范围内的正常使用。真正的风险在两处——**分发字体文件**（系统字体与商业字体都
+  禁止再分发）与**用未授权字体做 UI/宣传物料**；渲染输出（截图、文档里的文字）通常不需要额外许可。
+  各国保护不齐（美国：字形设计不受版权、字体软件受版权；德/日：字形设计也可能受保护；中国：字库软件
+  著作权明确、单字是否美术作品有分歧），但"分发字体文件要先拿授权"是共识。
+- 落盘：
+  - `docs/licenses.md` §6：三条边界（可以做什么 / 不可以做什么 / 自带字体的前提）+ 字体清单；
+  - ADR 0003 边界补第 5 条：MIT 兜不住商标 / 专利 / 编辑著作权，也兜不住字体；
+  - `.gitignore` 忽略字体后缀；新增 `tools/check-fonts.ps1`（`git ls-files` 命中字体后缀即失败）；
+  - CI 与 PR 模板各加一项。
+- 将来做非 Windows 构建或自带字体：只选 OFL / Apache-2.0（Source Han Sans / Noto Sans CJK、Inter、
+  IBM Plex），许可全文进 `THIRD-PARTY-NOTICES.txt`，遵守 OFL 署名与 Reserved Font Name。
+- 同日上下文：产品已更名 **VitalTray**（BatteryHub → VitalTray），决策与迁移见 ADR 0004。
+- 验证：`check-fonts.ps1` 0 命中；`check-cleanroom` / `gen-notices -Check` / `check-size` / `check-exe` /
+  `cargo test` / `--self-test` 全绿（本 commit 前实跑，见 summary）。
+
 ## 待办
 
 - 多显示器任务栏（当前只挂主任务栏）。

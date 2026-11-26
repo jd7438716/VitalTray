@@ -86,7 +86,8 @@ cargo build --release
 也可以在 `config.ini` 里写 `[ui] lang=auto`（默认）或 `en` / `zh-CN` / `ja` 等。
 
 面板按语言挑字体（YaHei / Yu Gothic UI / Malgun Gothic / Segoe UI），exe 的「文件说明」
-也按系统语言显示。细则与“加一种语言”的步骤见 [docs/i18n.md](docs/i18n.md)。
+也按系统语言显示。这几个字体**只按名字引用系统自带版本，不打包、不分发字体文件**
+（见 [docs/licenses.md](docs/licenses.md) §6）。细则与“加一种语言”的步骤见 [docs/i18n.md](docs/i18n.md)。
 
 ## 显示内容与数据来源
 

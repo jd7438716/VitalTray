@@ -42,6 +42,12 @@ jobs:
         shell: pwsh
         run: ./tools/check-cleanroom.ps1
 
+      # 界面只按名字引用 Windows 系统字体（不复制、不分发字体文件）。字体文件入库 = 分发
+      # 受版权保护的字体软件，违反许可；这条门禁把它挡在合并之前。
+      - name: 字体门禁（仓库不得含字体文件）
+        shell: pwsh
+        run: ./tools/check-fonts.ps1
+
       # 不加 -D warnings：clippy 默认 deny 的 lint（如 not_unsafe_ptr_arg_deref）仍然会让这一步失败，
       # 而风格类 warning 作为 v1.0 之后的技术债逐步清理，不阻塞发布。
       - name: clippy

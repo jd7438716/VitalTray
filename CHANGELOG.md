@@ -40,9 +40,14 @@
   本机 zh-CN 与 CI 的 en-US 对中文许可标签排序相反，导致 `-Check` 在 CI 上把正常文件误判为漂移。
   现改为 `[string]::CompareOrdinal` + ASCII 排序键，两种 locale 产出逐字节相同。
 - 新增 [docs/adr/0003-license-strategy.md](docs/adr/0003-license-strategy.md)：上游多为 GPL
-  而本项目保持 MIT 的依据（表达/事实二分、判例、实测无逐字重合）与三条边界（商标 / 专利 / 编辑著作权）。
+  而本项目保持 MIT 的依据（表达/事实二分、判例、实测无逐字重合）与边界（商标 / 专利 / 编辑著作权 / 字体）。
 - 新增 `tools/check-cleanroom.ps1`：CI 扫源码中混入的 GPL 与上游标识；本地若保留 `research/`，
   再做「注释 / 字符串逐字重合」比对——把"洁净室"从声明变成可执行门禁。
+- **字体合规成文 + 入库门禁**：`docs/licenses.md` §6 写清「只按名字引用 Windows 系统字体，
+  不复制、不分发字体文件」的三条边界（可以做什么 / 不可以做什么 / 自带字体的前提）；
+  ADR 0003 把字体列为 MIT 兜不住的第 5 类边界。新增 `tools/check-fonts.ps1`，
+  CI 与 PR 模板各加一项：`git ls-files` 里出现 `.ttf/.ttc/.otf` 等字体文件即失败。
+  `.gitignore` 同步忽略字体后缀，防止"顺手 copy 系统字体"。
 - README 增加「名称与商标」：与同名项目无关、MIT 不含商标授权、更名前的同名检索证据。
 
 ### 变更（破坏性：产品更名）

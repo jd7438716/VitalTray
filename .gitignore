@@ -16,3 +16,12 @@ tmp/
 # 8 个子目录各自带 .git（fork-ferloom / fork-hassani / battery-hub ...），
 # 入库会变成嵌套仓库；另有 research/bin 约 24 MB 二进制。
 research/
+
+# ---- 字体文件：界面只按名字引用 Windows 系统字体，不打包、不分发 ----
+# 理由与"确需自带字体"的前提见 docs/licenses.md §6；门禁：tools/check-fonts.ps1。
+*.ttf
+*.ttc
+*.otf
+*.woff
+*.woff2
+*.eot

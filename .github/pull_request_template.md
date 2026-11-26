@@ -8,6 +8,8 @@
       协议来源已写进 `docs/protocol-notes/`，实现见 notes 而非参考源码；
       `pwsh ./tools/check-cleanroom.ps1` 通过（本地有 `research/` 时会做逐字重合比对）。
 - [ ] **许可**：没有把 GPL / MPL 代码、大段摘抄或 `research/` 下的文件带进仓库。
+- [ ] **字体**：没有把 `.ttf` / `.ttc` / `.otf` 等字体文件带进仓库；界面只按名字引用系统字体
+      （见 `docs/licenses.md` §6；本地跑 `pwsh ./tools/check-fonts.ps1`）。
 - [ ] **依赖**：若改过 `Cargo.toml` / `Cargo.lock`，已运行 `pwsh ./tools/gen-notices.ps1`
       并把 `THIRD-PARTY-NOTICES.txt` 一起提交；新增参考来源已登记到 `docs/licenses.md`。
 - [ ] **行数**：`pwsh ./tools/check-size.ps1` 通过（单文件 ≤ 400 行）。

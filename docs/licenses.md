@@ -92,6 +92,7 @@ VitalTray（原 BatteryHub）以 **MIT** 发布，仓库内**不含任何第三�
 2. 不把 `research/` 下的任何文件提交进 git（该目录已整目录忽略，别用 `git add -f` 绕过）。
 3. 新增设备协议：先写 `docs/protocol-notes/`，再写实现；CRATE 文件头写一行来源。
 4. 改动依赖（`Cargo.toml` / `Cargo.lock`）：必须重跑 `pwsh ./tools/gen-notices.ps1` 并一起提交。
+5. 不把字体文件（`.ttf` / `.ttc` / `.otf` …）提交进仓库或塞进安装包（见 §6，`tools/check-fonts.ps1` 会拦）。
 
 ## 5. 复核记录
 
@@ -104,7 +105,38 @@ VitalTray（原 BatteryHub）以 **MIT** 发布，仓库内**不含任何第三�
 
 > 待办：XiuxiTimer（Gitee）许可未核实，确认后再补进 §1.1。
 
-## 6. 维护方式
+## 6. 字体（只引用系统字体，不分发字体文件）
+
+界面按语言选字体，但**只把字体家族名交给 GDI**（`CreateFontW`），字形由 Windows 从
+`%WINDIR%\Fonts` 提供——程序不读取字体文件、不复制、不打包、不内嵌。
+
+| 语言 | 字体家族 | 来源 |
+|---|---|---|
+| zh-CN / zh-TW | Microsoft YaHei UI | Windows 10/11 自带 |
+| ja | Yu Gothic UI | Windows 10/11 自带 |
+| ko | Malgun Gothic | Windows 10/11 自带 |
+| 其他 | Segoe UI | Windows 10/11 自带 |
+
+三条边界：
+
+1. **可以做**：在 Windows 上运行的程序按名字请求系统字体来渲染界面、截图、录屏。Windows 授权覆盖
+   这种使用，和任何 Windows 程序一样。渲染**输出**（图片、文档里的文字）通常也不需要额外许可。
+2. **不可以做**：把 `.ttf` / `.ttc` / `.otf` 复制进仓库、安装包、便携包或 Docker/CI 镜像再分发。
+   字体文件是受版权保护的**软件**；系统字体与绝大多数商业字体都禁止再分发，
+   「从网上免费下载」≠「可商用 / 可分发」。
+3. **要自带字体时**：只能选许可明确允许再分发的字体（SIL OFL / Apache-2.0，例如 Source Han Sans /
+   Noto Sans CJK、Inter、IBM Plex），把许可全文补进 [THIRD-PARTY-NOTICES.txt](../THIRD-PARTY-NOTICES.txt)
+   （走 `tools/gen-notices.ps1` 同一条路），并遵守 OFL 的署名与 Reserved Font Name 规则。
+   **不要**从系统目录或字体站"顺手 copy"。
+
+门禁：`tools/check-fonts.ps1`（CI 与 PR 模板都会跑）——`git ls-files` 里出现任何字体文件即失败。
+
+> 边界说明：字体在不同法域的保护不完全一样（美国：字形设计本身不受版权，但字体软件受版权；
+> 德国/日本：字形设计也可能受保护；中国：字库软件著作权明确，单字是否美术作品有司法分歧）。
+> 但**"分发字体文件要先拿授权"是全球共识**，本项目按这条最保守的线走。
+> 这一段是工程判断，不是法律意见；商用分发前按 [ADR 0003](adr/0003-license-strategy.md) 的免责说明做一次复核。
+
+## 7. 维护方式
 
 - **依赖变化**：`pwsh ./tools/gen-notices.ps1` → 生成 [THIRD-PARTY-NOTICES.txt](../THIRD-PARTY-NOTICES.txt)；
   CI 会跑 `-Check`，忘了重新生成会直接失败。
