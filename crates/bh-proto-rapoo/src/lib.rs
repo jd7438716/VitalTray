@@ -1,6 +1,7 @@
 //! Rapoo（雷柏）VT 系列鼠标电量：被动读取厂商集合 FF00:0002 的状态帧。
 //!
-//! 两种已知布局（来自公开逆向资料，见 docs/protocol-notes/rapoo.md）：
+//! 两种已知布局（来自公开逆向资料，见 docs/protocol-notes/rapoo.md）；
+//! 仅取帧格式与观测数据，未复制任何第三方代码，来源清单见 docs/licenses.md。
 //! * Nordic 54L（VT3 Max、VT9、VT3 Pro 等）：report id 0x07
 //!   byte7 = 状态（0 无效 / 1 放电 / 2 充电），byte8 = 电量百分比（0–100）
 //! * 旧版 7 字节：BB B0 [mode] [dpi lo] [dpi hi] [状态] [百分比]

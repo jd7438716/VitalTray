@@ -46,12 +46,13 @@
 1. 读参考源码 → 在 docs/protocol-notes/<设备>.md 只写“事实”（帧格式、时序、坑）。
 2. 关掉参考源码，按笔记独立实现。
 3. PR 模板强制勾选：“本 PR 未复制任何 GPL 代码；协议来源见 notes”。
-4. docs/licenses.md 列出所有参考项目及许可，CI 检查清单未过期。
+4. docs/licenses.md 列出所有参考项目及许可，THIRD-PARTY-NOTICES.txt 由 tools/gen-notices.ps1 从 Cargo.lock 生成，CI 用 `-Check` 校验未过期。
 
 ### 2.3 参考库与许可（已核实）
 | 来源 | 许可 | 用法 |
 |---|---|---|
-| 原版 BatteryHub / 4 个 C++ fork | GPL-3.0 | 只读思路 |
+| BatteryHub（C++/Qt，含 5 个派生仓库） | GPL-3.0 | 只读思路 |
+| Battery Hub（Electron） | MIT | 只读思路（注意与上面同名、不同项目） |
 | HeadsetControl | GPL-2.0 | 只读协议 |
 | OpenRazer | GPL-2.0-or-later | 只读协议 |
 | Solaar | GPL-2.0 | 只读协议 |

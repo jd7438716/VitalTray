@@ -1,6 +1,7 @@
 //! Razer（雷蛇）鼠标电量：90 字节 feature report 上的命令类 0x07。
 //!
-//! 协议要点（公开逆向资料，OpenRazer 系列实现一致）：
+//! 协议要点（公开逆向资料，OpenRazer 系列实现一致）：仅取协议事实，未复制代码；
+//! 来源清单与许可（OpenRazer 为 GPL-2.0-or-later）见 docs/licenses.md。
 //! * 报文固定 90 字节：`[status, txn, pkts_hi, pkts_lo, proto, size, class, cmd, args(80), crc, 0]`
 //! * `crc` = 第 2..88 字节的异或；不匹配说明设备没按协议应答，直接判失败。
 //! * 命令类 `0x07`（电池）：`0x80` 取电量、`0x84` 取充电状态。

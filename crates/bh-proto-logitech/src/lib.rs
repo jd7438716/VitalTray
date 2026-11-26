@@ -1,6 +1,7 @@
 //! Logitech HID++ 2.0 最简客户端：只做"发现特性 + 读电量"。
 //!
 //! 协议要点（公开文档 + 社区逆向，均为事实性描述）：
+//! 来源清单与许可（Solaar 为 GPL-2.0，仅取协议事实、未复制代码）见 docs/licenses.md。
 //! * 长报文 report id = 0x11，短报文 0x10；帧 = [id, deviceIndex, featureIndex, function<<4|swId, params..]
 //! * featureIndex 0x00 = IRoot，function 0x00 = getFeature(featureId)，返回 [featureIndex, type, version]
 //! * 特性 0x1000 = BATTERY_STATUS，function 0x00 = getBatteryLevelStatus

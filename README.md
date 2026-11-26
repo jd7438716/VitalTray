@@ -170,3 +170,7 @@ impl DeviceDomain for Domain {
 ## 许可
 
 MIT。
+
+- 参考过的开源项目、各自许可与本项目的许可选举：[docs/licenses.md](docs/licenses.md)
+- 随 exe 分发的第三方许可全文：[THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt)
+  （由 `tools/gen-notices.ps1` 从 `Cargo.lock` 生成，CI 校验未过期）

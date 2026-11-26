@@ -2,6 +2,7 @@
 
 > 用途：本项目的洁净室笔记。只记录帧格式/字段，不摘抄任何 GPL 代码。
 > 来源：Logitech 公开的 HID++ 2.0 文档 + 社区项目（Solaar、libratbag 等）的协议描述。
+> 来源清单与许可（Solaar 为 GPL-2.0，仅读协议事实）见 [docs/licenses.md](../licenses.md)。
 
 ## 传输
 

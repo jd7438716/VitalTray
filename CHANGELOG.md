@@ -5,6 +5,18 @@
 
 ## [未发布]
 
+### 文档 / 合规
+
+- **第三方来源与许可成文**：新增 `docs/licenses.md`（参考过的开源项目、各自许可与本项目的许可选举）
+  与 `THIRD-PARTY-NOTICES.txt`（随 exe 分发的第三方许可全文，由 `tools/gen-notices.ps1` 从
+  `Cargo.lock` 自动生成）。发布物现在附带 `THIRD-PARTY-NOTICES.txt` 与 `LICENSE`，
+  CI 用 `-Check` 拦住「改了依赖却忘了重新生成」。
+- **修正两处许可事实错误**：① 两个同名 Battery Hub —— C++/Qt 项目是 GPL-3.0、Electron 项目是 MIT，
+  此前在 PLAN 的许可表里被写成同一行 GPL-3.0，且 fork 数量记错（4 → 5）；
+  ② hidapi 内嵌的 HIDAPI C 库实为「GPLv3 / BSD-3-Clause / 原始许可」三选一，
+  其 `etc/hidapi/` 里同时躺着 GPL 全文，现已明确记录本项目**选举 BSD-3-Clause**。
+- 新增 `.github/pull_request_template.md`：含「未复制第三方代码」「依赖改动须重生成 notices」等必勾项。
+
 ## [1.1.1] - 2026-11-26
 
 ### 新增

@@ -63,6 +63,11 @@ jobs:
           "batteryhub.exe  $hash" | Out-File -FilePath target/release/SHA256SUMS.txt -Encoding ascii
           Get-Content target/release/SHA256SUMS.txt
 
+      # 发布物必须带上第三方许可声明，否则 MIT / Apache-2.0 / BSD-3 的告知义务没履行。
+      - name: 第三方许可清单未过期
+        shell: pwsh
+        run: ./tools/gen-notices.ps1 -Check
+
       - name: 发布到 GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
@@ -73,3 +78,5 @@ jobs:
           files: |
             target/release/batteryhub.exe
             target/release/SHA256SUMS.txt
+            THIRD-PARTY-NOTICES.txt
+            LICENSE
