@@ -40,4 +40,8 @@
 
 `tools/install.ps1` 重装同版本二进制：`%LOCALAPPDATA%\Programs\VitalTray\vitaltray.exe` 与
 `target\release\vitaltray.exe` SHA256 一致；自启项仍是 `"...vitaltray.exe" --minimized`（现在这个参数有用了）。
-版本号与 tag 均未动（用户没有要求发版）。
+版本号与 tag 均未动（用户当时没有要求发版）。
+
+**补记（2026-11-26 17:47）**：随后用户要求发布，本修复已收口成 **v1.2.1** 并发到 GitHub Releases
+（`1a650f5` → `0d65783 chore(release): v1.2.1`，tag `v1.2.1`），详见
+[`gits/20261126-release-1.2.1/summary.md`](../20261126-release-1.2.1/summary.md)。
