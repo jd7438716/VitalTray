@@ -48,6 +48,12 @@ jobs:
       - name: 构建 release
         run: cargo build --locked --release
 
+      # 曾经把没有任何资源的 exe（无图标/无版本信息/无清单）发到了 Releases，
+      # 这条门禁就是那次漏检的补丁：缺资源直接失败。
+      - name: 资源门禁（图标 / 版本信息 / 应用清单）
+        shell: pwsh
+        run: ./tools/check-exe.ps1 ./target/release/batteryhub.exe
+
       - name: 无界面自检
         shell: pwsh
         run: ./target/release/batteryhub.exe --self-test

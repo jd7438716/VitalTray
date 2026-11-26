@@ -261,6 +261,35 @@
   再出现就把「一轮」放独立线程 + 硬超时放弃。详见 `gits/20261126-ghost-ux/decision-chain.md` D4。
 - 按用户要求**不发新版**（版本仍是 1.1.0，未打 tag、未动 Release）；本机已重装同一版本。
 
+## 2026-11-26 · exe 身份补齐：图标 / 版本信息 / 清单 + 托盘健壮性
+
+- 起因：用户问“应用是不是没有图标”。实测确认：`target\release` 与安装版 exe 的**资源目录 RVA = 0**——
+  一个资源都没有：无图标、无版本信息、无应用清单。`SHGetFileInfo` 取到的就是 Windows 通用白窗图标；
+  `(Get-Item).VersionInfo` 全空；运行中的进程压根没加载 comctl32 v6（原生菜单因此是经典样式）。
+- 根因：仓库里没有 `build.rs` / `.rc` / `.ico`，Cargo 默认不给 exe 编任何资源；发布流水线只算 SHA256，从不检查资源。
+- 修复（身份层）：
+  - `assets/batteryhub.ico`：竖向绿色电池（`#6CCB5F` = 状态色板里的 Good 深色），16/20/24/32/40/48/64/128/256 九档。
+  - `crates/bh-app/build.rs`：零第三方依赖，自己找 Windows SDK 的 `rc.exe` 把 ICON + VERSIONINFO + MANIFEST 编进 exe；
+    版本号从 `CARGO_PKG_VERSION` 生成，不会再和 `Cargo.toml` 漂移。找不到 `rc.exe` 只警告不失败（源码构建不受影响）。
+  - 清单：comctl32 v6（菜单跟随系统主题）、PerMonitorV2、Win10/11 supportedOS、longPathAware、asInvoker。
+  - 坑 1：`.rc` 里的路径必须转义反斜杠，否则 `\b` `\t` 会被当转义序列；坑 2：中文 `FileDescription` 必须 `#pragma code_page(65001)`。
+- 修复（运行时）：
+  - `TaskbarCreated` → 重新 `NIM_ADD`：资源管理器重启 / 崩溃恢复后，托盘图标不再永久消失。
+  - 第二个实例不再静默退出，而是 `FindWindowW` + `PostMessage` 把面板叫出来——既是“托盘被关掉”之后的恢复入口，
+    也修掉“双击 exe 毫无反应”的老毛病。关托盘图标时会明确提示怎么找回来。
+  - 窗口类 `hIcon` 与托盘兜底图标改成内嵌图标（`LoadIconW(hinst, 1)`）。
+- 字形：托盘电池由横向改竖向，与应用图标同构；状态色语义完全不变（低电红壳、无数据斜线）。
+  按用户反馈又**加宽了一版**：壳宽 35% → 46%、触点 17% → 22%、壳厚 5.5%——
+  35% 那版 16px 下像根细管子，46% 在任务栏和资源管理器里都更结实。应用图标与托盘字形共用这套比例。
+  `docs/status-icons.png` 已按新字形重新生成。
+- 门禁：`tools/check-exe.ps1` 读 PE 资源目录，缺图标 / 版本信息 / 清单或版本号为空即失败；CI 与 release 都跑。
+- 数据：release 470,528 → 500,224 B（+29.7 KB，主要是 24 KB 图标）；`cargo test` 71 项全绿；
+  clippy 0 error（18 项既有风格 warning，未新增）；66 个 `.rs` 0 超限；`check-exe.ps1` 对新 exe 5 项 PASS、对旧 exe 5 项 FAIL。
+- 实机验证：新 exe 起托盘后广播 `TaskbarCreated` → 日志 `taskbar recreated; re-adding icon`；
+  再运行一次 exe → `wake from second instance: show panel`，面板在 (527,40) 弹出；
+  `tools/install.ps1` 覆盖安装后，开始菜单快捷方式取到新图标（绿电池 + 快捷方式角标）。
+- 注意：已发布的 v1.1.0 exe 不会自己变，要重新打 tag 才会更新下载页。
+
 ## 待办
 
 - 多显示器任务栏（当前只挂主任务栏）。

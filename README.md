@@ -31,7 +31,7 @@ Rust + 原生 Win32，零第三方运行时，MIT。
 - **SmartScreen**：exe 未签名，首次运行可能提示「Windows 已保护你的电脑」→ 更多信息 → 仍要运行；
   介意的话用上面的 SHA256 自行核对。
 
-当前版本：**1.0.0**（变更见 [CHANGELOG.md](CHANGELOG.md)）。
+当前版本：**1.1.0**（变更见 [CHANGELOG.md](CHANGELOG.md)）。
 
 ## 从源码构建
 
@@ -57,6 +57,9 @@ cargo build --release
 - **鼠标悬停托盘图标** → 提示只显示标题 `BatteryHub`；电量、续航都在左键面板里，提示不重复数字。
 - 面板里**只有信息、没有按钮**：点任意处、按 `Esc`、再点一次托盘 → 收起；
   在面板上按右键也是收起面板、把菜单交出来（左键=看，右键=做，两边不混）。
+- **托盘图标是唯一的菜单入口**：菜单里关掉它之后，再运行一次 `batteryhub.exe` 就会弹出面板，
+  在面板上右键即可把菜单拿回来（不用去改配置文件）。
+- 第二次双击 exe **不会**再起一个进程，而是把已经在跑的那个叫出来（以前是静默退出、看起来像没反应）。
 - **任务栏文本已移除**：按用户反馈，不再往任务栏里塞文字；所有信息进面板。
 
 ## 显示内容与数据来源
@@ -87,10 +90,12 @@ cargo build --release
 ```text
 crates/bh-api      插件 API（不依赖平台，插件只依赖它）
 crates/bh-core     宿主：配置 / 日志 / 单实例 / 自启 / 托盘 / 面板 / 系统采样 / 消息循环
-crates/bh-app      可执行入口
+crates/bh-app      可执行入口（build.rs 把图标 / 版本信息 / 应用清单编进 exe）
 plugins/           设备域插件：mouse / keyboard / laptop / bluetooth
+assets/            batteryhub.ico（16–256 九档，exe 图标与托盘兜底图标同源）
 docs/adr/          架构决策记录
 tools/check-size.ps1   文件大小门禁（>400 行失败）
+tools/check-exe.ps1    资源门禁（缺图标 / 版本信息 / 清单即失败）
 ```
 
 面板代码结构（`crates/bh-core/src/panel/`）：
@@ -144,6 +149,8 @@ impl DeviceDomain for Domain {
 ## 纪律
 
 - 单文件 ≤ 400 行（`tools/check-size.ps1`，CI 会跑）。
+- exe 必须带图标 / 版本信息 / 应用清单（`tools/check-exe.ps1`，CI 与 release 都会跑）。
+  曾经把三样全缺的 exe 发上了 Releases——资源管理器里是通用白窗图标，属性页一片空白。
 - 洁净室：只参考协议事实，不复制任何 GPL 代码（见 PLAN.md 第 2 节）。
 - 温度/占用拿不到就显示 “—”，不猜数字。
 

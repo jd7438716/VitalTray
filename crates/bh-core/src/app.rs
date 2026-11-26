@@ -76,7 +76,9 @@ pub fn run() -> i32 {
     let _guard = match single_instance::acquire("Local\\BatteryHub.SingleInstance") {
         Some(g) => g,
         None => {
-            log::warn("app", "another instance is running; exiting");
+            // 已经有一个实例在跑：把面板叫出来再退出，别让“双击没反应”变成死胡同。
+            let woken = window::wake_existing();
+            log::warn("app", &format!("another instance is running; wake existing = {woken}"));
             return 0;
         }
     };
@@ -155,7 +157,23 @@ pub fn run() -> i32 {
 }
 
 unsafe extern "system" fn wndproc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
+    // 资源管理器重启会广播 TaskbarCreated：不重新挂图标，托盘就再也回不来了。
+    if tray::is_taskbar_created(msg) {
+        log::info("tray", "taskbar recreated; re-adding icon");
+        state::with_mut(|st| {
+            if let Some(t) = st.and_then(|s| s.tray.as_mut()) {
+                t.readd();
+            }
+        });
+        runtime::refresh();
+        return 0;
+    }
     match msg {
+        window::WAKE_MESSAGE => {
+            log::info("app", "wake from second instance: show panel");
+            crate::panel::show();
+            0
+        }
         WM_DESTROY => {
             unsafe { KillTimer(hwnd, 1) };
             state::with_mut(|st| {

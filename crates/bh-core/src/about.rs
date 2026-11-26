@@ -19,3 +19,10 @@ pub fn show(plugin_lines: &[String], config_path: &str, log_dir: &str) {
     let c = wide(crate::i18n::t("about.title"));
     unsafe { MessageBoxW(std::ptr::null_mut(), t.as_ptr(), c.as_ptr(), MB_OK | MB_ICONINFORMATION); }
 }
+
+/// 一句说明（用于“托盘图标被关掉，怎么找回来”这类一次性提示）。
+pub fn info(title: &str, text: &str) {
+    let t = wide(text);
+    let c = wide(title);
+    unsafe { MessageBoxW(std::ptr::null_mut(), t.as_ptr(), c.as_ptr(), MB_OK | MB_ICONINFORMATION); }
+}

@@ -4,14 +4,20 @@ pub mod icons;
 pub mod menu;
 
 use windows_sys::Win32::Foundation::HWND;
+use windows_sys::Win32::System::LibraryLoader::GetModuleHandleW;
 use windows_sys::Win32::UI::Shell::{
     Shell_NotifyIconW, NIF_ICON, NIF_INFO, NIF_MESSAGE, NIF_TIP, NIIF_WARNING, NIM_ADD,
     NIM_DELETE, NIM_MODIFY, NOTIFYICONDATAW,
 };
-use windows_sys::Win32::UI::WindowsAndMessaging::{LoadIconW, WM_APP};
+use windows_sys::Win32::UI::WindowsAndMessaging::{
+    LoadIconW, RegisterWindowMessageW, WM_APP,
+};
 
 /// 托盘回调消息号（lParam 低字为鼠标事件）。
 pub const TRAY_CALLBACK: u32 = WM_APP + 1;
+
+/// exe 内嵌的图标资源 ID（见 `crates/bh-app/build.rs`）。
+const APP_ICON_ID: usize = 1;
 
 pub struct TrayIcon {
     data: NOTIFYICONDATAW,
@@ -35,6 +41,12 @@ impl TrayIcon {
         let ok = unsafe { Shell_NotifyIconW(NIM_ADD, &self.data) != 0 };
         self.added = ok;
         ok
+    }
+
+    /// 资源管理器重启后托盘区被重建，图标要重新挂一次。
+    pub fn readd(&mut self) -> bool {
+        self.added = false;
+        self.add()
     }
 
     pub fn set_icon(&mut self, icon: *mut core::ffi::c_void) {
@@ -91,6 +103,26 @@ fn set_tip_into(data: &mut NOTIFYICONDATAW, tip: &str) {
 }
 
 fn default_icon() -> *mut core::ffi::c_void {
-    // M0 用系统默认图标；M1 换成按电量绘制的 GDI 图标。
-    unsafe { LoadIconW(std::ptr::null_mut(), 32512 as *const u16) }
+    // 先用 exe 内嵌的图标（build.rs 编进去的），没有资源才退回系统默认。
+    unsafe {
+        let hinst = GetModuleHandleW(std::ptr::null());
+        let icon = LoadIconW(hinst, crate::window::int_resource(APP_ICON_ID));
+        if icon.is_null() {
+            LoadIconW(std::ptr::null_mut(), crate::window::int_resource(32512))
+        } else {
+            icon
+        }
+    }
+}
+
+/// 资源管理器广播的 `TaskbarCreated` 消息号（系统范围内同一个 ID，取一次缓存）。
+///
+/// 收不到它，Explorer 重启后托盘图标就永久消失了——只能重启应用。
+pub fn is_taskbar_created(msg: u32) -> bool {
+    static ID: std::sync::OnceLock<u32> = std::sync::OnceLock::new();
+    let id = *ID.get_or_init(|| {
+        let name: Vec<u16> = "TaskbarCreated\0".encode_utf16().collect();
+        unsafe { RegisterWindowMessageW(name.as_ptr()) }
+    });
+    id != 0 && msg == id
 }

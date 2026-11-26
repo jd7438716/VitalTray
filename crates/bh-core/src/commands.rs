@@ -78,21 +78,25 @@ fn toggle_autostart() {
 }
 
 fn toggle_tray() {
-    state::with_mut(|st| {
-        if let Some(s) = st {
-            s.tray_wanted = !s.tray_wanted;
-            s.cfg.tray = s.tray_wanted;
-            let _ = s.cfg.save(&s.cfg_path);
-            if s.tray_wanted {
-                let mut t = tray::TrayIcon::new(s.hwnd, 1, crate::i18n::t("tray.title"));
-                t.add();
-                s.tray = Some(t);
-            } else if let Some(mut t) = s.tray.take() {
-                t.remove();
-            }
-            log::info("tray", &format!("-> {}", s.tray_wanted));
+    // 托盘是唯一的菜单入口：关掉之后必须留一条回得来的路（再运行一次 exe 唤出面板）。
+    let turned_off = state::with_mut(|st| {
+        let Some(s) = st else { return false };
+        s.tray_wanted = !s.tray_wanted;
+        s.cfg.tray = s.tray_wanted;
+        let _ = s.cfg.save(&s.cfg_path);
+        if s.tray_wanted {
+            let mut t = tray::TrayIcon::new(s.hwnd, 1, crate::i18n::t("tray.title"));
+            t.add();
+            s.tray = Some(t);
+        } else if let Some(mut t) = s.tray.take() {
+            t.remove();
         }
+        log::info("tray", &format!("-> {}", s.tray_wanted));
+        !s.tray_wanted
     });
+    if turned_off {
+        about::info(crate::i18n::t("tray.off.title"), crate::i18n::t("tray.off.body"));
+    }
 }
 
 fn cycle_icon_style() {

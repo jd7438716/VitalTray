@@ -8,8 +8,8 @@ use windows_sys::Win32::Graphics::Gdi::{
 use windows_sys::Win32::System::LibraryLoader::GetModuleHandleW;
 use windows_sys::Win32::UI::HiDpi::{GetDpiForMonitor, MDT_EFFECTIVE_DPI};
 use windows_sys::Win32::UI::WindowsAndMessaging::{
-    CreateWindowExW, LoadCursorW, RegisterClassW, WNDCLASSW, WNDPROC, CS_HREDRAW, CS_VREDRAW,
-    WS_EX_LAYERED, WS_EX_TOOLWINDOW, WS_EX_TOPMOST, WS_POPUP,
+    CreateWindowExW, LoadCursorW, LoadIconW, RegisterClassW, WNDCLASSW, WNDPROC, CS_HREDRAW,
+    CS_VREDRAW, WS_EX_LAYERED, WS_EX_TOOLWINDOW, WS_EX_TOPMOST, WS_POPUP,
 };
 
 pub fn create_window(proc: WNDPROC) -> Option<HWND> {
@@ -22,8 +22,8 @@ pub fn create_window(proc: WNDPROC) -> Option<HWND> {
             cbClsExtra: 0,
             cbWndExtra: 0,
             hInstance: hinst,
-            hIcon: std::ptr::null_mut(),
-            hCursor: LoadCursorW(std::ptr::null_mut(), 32512 as *const u16),
+            hIcon: LoadIconW(hinst, crate::window::int_resource(1)),
+            hCursor: LoadCursorW(std::ptr::null_mut(), crate::window::int_resource(32512)),
             hbrBackground: std::ptr::null_mut(),
             lpszMenuName: std::ptr::null(),
             lpszClassName: class.as_ptr(),

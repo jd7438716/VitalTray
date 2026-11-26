@@ -112,7 +112,7 @@ Windows 11 的新电池图标用绿表示“正在充电且状态良好”。但
 | 文件 | 职责 |
 |---|---|
 | `crates/bh-core/src/status.rs` | 状态枚举、阈值、汇总优先级、状态色、对比度单测 |
-| `crates/bh-core/src/tray/icons.rs` | 按状态画图标；低电红壳；无数据斜线/`—` |
+| `crates/bh-core/src/tray/icons.rs` | 按状态画图标（竖向电池，电量从底部往上填）；低电红壳；无数据斜线/`—` |
 | `crates/bh-core/src/runtime.rs` | 读数 → `status::aggregate` → 托盘图标 |
 | `crates/bh-core/src/theme.rs` | 任务栏主题 `taskbar_is_dark()`（`SystemUsesLightTheme`） |
 | `crates/bh-core/src/panel/model.rs` | 面板设备行套用同一套状态与阈值 |

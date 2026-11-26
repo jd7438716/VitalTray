@@ -168,26 +168,29 @@ unsafe fn draw(dc: H, size: i32, agg: &Aggregate, style: Style, dark: bool, mono
 
     match style {
         Style::Battery => {
-            let body_x = size * 5 / 100;
-            let body_y = size * 20 / 100;
-            let body_w = size * 78 / 100;
-            let body_h = size * 56 / 100;
-            round_rect(dc, body_x, body_y, body_w, body_h, size / 9, shell);
-            let pad = size * 6 / 100;
+            // 竖向电池，与应用图标（`assets/batteryhub.ico`）同一套比例：
+            // 壳宽 46%、高 62%、壳厚 5.5%、触点宽 22%。电量从底部往上填。
+            let body_x = size * 27 / 100;
+            let body_y = size * 23 / 100;
+            let body_w = size * 46 / 100;
+            let body_h = size * 62 / 100;
+            round_rect(dc, body_x, body_y, body_w, body_h, size / 10, shell);
+            let pad = size * 11 / 200;
             let inner_w = body_w - pad * 2;
             let inner_h = body_h - pad * 2;
-            round_rect(dc, body_x + pad, body_y + pad, inner_w, inner_h, size / 16, bg);
+            round_rect(dc, body_x + pad, body_y + pad, inner_w, inner_h, size / 18, bg);
             match agg.percent {
                 Some(_) => {
-                    let filled = inner_w * percent.min(100) / 100;
-                    round_rect(dc, body_x + pad, body_y + pad, filled.max(1), inner_h, size / 16, accent);
+                    let filled = (inner_h * percent.min(100) / 100).max(1);
+                    round_rect(dc, body_x + pad, body_y + pad + inner_h - filled, inner_w, filled, size / 18, accent);
                 }
                 None => {
                     // 空心 + 斜线 = “没有数据”，跟 0% 的满格内底区分开。
-                    line(dc, body_x + pad, body_y + pad, body_x + pad + inner_w, body_y + pad + inner_h, shell, (size / 14).max(2));
+                    line(dc, body_x + pad, body_y + pad + inner_h, body_x + pad + inner_w, body_y + pad, shell, (size / 14).max(2));
                 }
             }
-            round_rect(dc, body_x + body_w + size * 3 / 100, body_y + body_h / 3, size * 7 / 100, body_h / 3, size / 24, shell);
+            let nub_w = size * 22 / 100;
+            round_rect(dc, (size - nub_w) / 2, body_y - size * 7 / 100, nub_w, size * 7 / 100, size / 28, shell);
         }
         Style::Number => {
             round_rect(dc, size * 3 / 100, size * 3 / 100, size * 94 / 100, size * 94 / 100, size / 6, bg);
