@@ -25,6 +25,7 @@ pub mod i18n;
 pub mod log;
 pub mod paths;
 pub mod poller;
+pub mod probe_state;
 pub mod plugins;
 pub mod registry;
 pub mod selftest;

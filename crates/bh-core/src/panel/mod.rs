@@ -69,6 +69,10 @@ pub fn toggle() {
 /// 返回 false 表示窗口建不起来。
 pub fn show() -> bool {
     let Some(hwnd) = ensure() else { return false };
+    // 打开面板 = 一次「立即刷新」：被动协议（雷柏接收器）只在设备被使用时才推帧，
+    // 光靠退避轮询很难正好逮到那一刻。这里强制重试一轮并解除退避，
+    // 6 秒内只要有帧，面板自己那个 1 秒定时器就会把它画出来。
+    crate::poller::request_refresh();
     hide();
 
     let model = model::build();
