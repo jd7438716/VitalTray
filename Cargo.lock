@@ -4,18 +4,18 @@ version = 4
 
 [[package]]
 name = "bh-api"
-version = "0.0.1"
+version = "1.0.0"
 
 [[package]]
 name = "bh-app"
-version = "0.0.1"
+version = "1.0.0"
 dependencies = [
  "bh-core",
 ]
 
 [[package]]
 name = "bh-core"
-version = "0.0.1"
+version = "1.0.0"
 dependencies = [
  "bh-api",
  "bh-hid",
@@ -28,7 +28,7 @@ dependencies = [
 
 [[package]]
 name = "bh-hid"
-version = "0.0.1"
+version = "1.0.0"
 dependencies = [
  "bh-api",
  "hidapi",
@@ -36,14 +36,14 @@ dependencies = [
 
 [[package]]
 name = "bh-plugin-bluetooth"
-version = "0.0.1"
+version = "1.0.0"
 dependencies = [
  "bh-api",
 ]
 
 [[package]]
 name = "bh-plugin-keyboard"
-version = "0.0.1"
+version = "1.0.0"
 dependencies = [
  "bh-api",
  "bh-proto-logitech",
@@ -52,14 +52,14 @@ dependencies = [
 
 [[package]]
 name = "bh-plugin-laptop"
-version = "0.0.1"
+version = "1.0.0"
 dependencies = [
  "bh-api",
 ]
 
 [[package]]
 name = "bh-plugin-mouse"
-version = "0.0.1"
+version = "1.0.0"
 dependencies = [
  "bh-api",
  "bh-proto-logitech",
@@ -68,14 +68,14 @@ dependencies = [
 
 [[package]]
 name = "bh-proto-logitech"
-version = "0.0.1"
+version = "1.0.0"
 dependencies = [
  "bh-api",
 ]
 
 [[package]]
 name = "bh-proto-rapoo"
-version = "0.0.1"
+version = "1.0.0"
 dependencies = [
  "bh-api",
 ]

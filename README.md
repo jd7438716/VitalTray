@@ -14,7 +14,26 @@ Rust + 原生 Win32，零第三方运行时，MIT。
 > 本机实拍：ASUS Zenbook 14 UX3405MA。CPU 温度、GPU 占用、内存、系统盘、外设电量与品牌/型号一屏可见；
 > 驱动不提供的温度显示 “—”，不编造数字。
 
-## 快速开始
+## 下载与安装
+
+到 [Releases](https://github.com/jd7438716/battery-hub/releases) 下载 `batteryhub.exe`，双击即可运行
+（GUI 子系统，不会弹黑窗）。
+
+- **校验下载**：发布页 `SHA256SUMS.txt` 里有哈希，
+  ```powershell
+  Get-FileHash .\batteryhub.exe -Algorithm SHA256
+  ```
+- **便携模式**：`batteryhub.exe --portable` —— 配置与日志放 exe 同目录，不写注册表。
+- **开机自启**：默认写用户级 `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`，不需要管理员；
+  右键托盘可随时关掉。
+- **卸载**：右键托盘 → 退出；删掉 exe；再删 `%LOCALAPPDATA%\BatteryHub` 与注册表值
+  `HKCU\Software\Microsoft\Windows\CurrentVersion\Run\BatteryHub`。
+- **SmartScreen**：exe 未签名，首次运行可能提示「Windows 已保护你的电脑」→ 更多信息 → 仍要运行；
+  介意的话用上面的 SHA256 自行核对。
+
+当前版本：**1.0.0**（变更见 [CHANGELOG.md](CHANGELOG.md)）。
+
+## 从源码构建
 
 ```powershell
 cargo build --release
@@ -128,6 +147,7 @@ impl DeviceDomain for Domain {
 - **M5 ✅** Rapoo 私有协议实测接入
 - **M6 ✅** 分级开发日志
 - **M7 ✅** 竖排状态面板：CPU/GPU/内存/磁盘/温度、品牌型号、图标、菜单式交互
+- **v1.0.0 ✅** 首个公开版本（2026-11-26），见 [CHANGELOG.md](CHANGELOG.md)
 - **待办**：Logitech 接收器多设备配对表；校准向导 UI；磁盘 SMART 温度（需要管理员，暂不做）。
 
 ## 许可
