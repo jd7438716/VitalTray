@@ -53,27 +53,7 @@ batteryhub.exe 通过 hidapi crate 静态编译了 HIDAPI C 库的 Windows 后�
 四、许可全文（按内容去重，每份只出现一次）
 ------------------------------------------
 
-【1】Apache License 2.0（简式声明，全文见另一节）
-适用于：
-  - shlex 2.0.1（LICENSE-APACHE）
-
---------------------------------------------------------------
-Copyright 2015 Nicholas Allegra (comex).
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
---------------------------------------------------------------
-
-【2】Apache License 2.0（全文）
+【1】Apache License 2.0（全文）
 适用于：
   - cc 1.11.3（LICENSE-APACHE）
   - cfg-if 1.0.5（LICENSE-APACHE）
@@ -284,7 +264,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 --------------------------------------------------------------
 
-【3】Apache License 2.0（全文）
+【2】Apache License 2.0（全文）
 适用于：
   - libc 0.2.191（LICENSE-APACHE）
 
@@ -467,7 +447,7 @@ TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
 END OF TERMS AND CONDITIONS
 --------------------------------------------------------------
 
-【4】Apache License 2.0（全文）
+【3】Apache License 2.0（全文）
 适用于：
   - windows-link 0.2.1（license-apache-2.0）
   - windows-sys 0.61.2（license-apache-2.0）
@@ -674,6 +654,26 @@ END OF TERMS AND CONDITIONS
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
+--------------------------------------------------------------
+
+【4】Apache License 2.0（简式声明，全文见另一节）
+适用于：
+  - shlex 2.0.1（LICENSE-APACHE）
+
+--------------------------------------------------------------
+Copyright 2015 Nicholas Allegra (comex).
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 --------------------------------------------------------------
 
 【5】BSD 3-Clause（HIDAPI C 库）

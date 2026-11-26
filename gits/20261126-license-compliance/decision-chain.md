@@ -130,3 +130,16 @@
 | 工作区干净 | `git status --short` | 空 |
 | 与远端同步 | `git rev-list --left-right --count origin/main...HEAD` | `0 0` |
 | notices 未过期 | `./tools/gen-notices.ps1 -Check` | `exit 0` |
+
+---
+
+## 附：后续修复（2026-11-26 16:35）
+
+上面最后一条断言在**本地**成立，但在 CI 真机上失败了：windows-latest / pwsh 7 的 `-Check` 报
+仓库内 notices 与现场生成不一致，差异落在许可小节标签顺序（`简式声明` vs `全文`）。
+
+根因不是依赖漂移、也不是 PowerShell 7 兼容性，而是 `Sort-Object` 的**文化敏感排序**：
+本机 zh-CN 与 runner 的 en-US 对含中文的排序键给出相反顺序。修复（改用
+`[string]::CompareOrdinal` + ASCII 排序键）记录见 `gits/20261126-notices-ordinal-fix/`。
+
+本文档其余内容为当时记录，未作改写（审计只读纪律）。

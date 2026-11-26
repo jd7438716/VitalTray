@@ -16,6 +16,9 @@
   ② hidapi 内嵌的 HIDAPI C 库实为「GPLv3 / BSD-3-Clause / 原始许可」三选一，
   其 `etc/hidapi/` 里同时躺着 GPL 全文，现已明确记录本项目**选举 BSD-3-Clause**。
 - 新增 `.github/pull_request_template.md`：含「未复制第三方代码」「依赖改动须重生成 notices」等必勾项。
+- **修复 notices 门禁的区域设置依赖**：`tools/gen-notices.ps1` 原先用 `Sort-Object`（文化敏感排序），
+  本机 zh-CN 与 CI 的 en-US 对中文许可标签排序相反，导致 `-Check` 在 CI 上把正常文件误判为漂移。
+  现改为 `[string]::CompareOrdinal` + ASCII 排序键，两种 locale 产出逐字节相同。
 
 ## [1.1.1] - 2026-11-26
 

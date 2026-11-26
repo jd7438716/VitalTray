@@ -23,9 +23,9 @@ function Convert-ToLf {
 
 function Get-LicenseFileList {
     param([string]$Dir)
-    Get-ChildItem -LiteralPath $Dir -File |
-        Where-Object { $_.Name -match '^(?i)(licen[cs]e|notice|copying)' } |
-        Sort-Object Name
+    $files = @(Get-ChildItem -LiteralPath $Dir -File |
+        Where-Object { $_.Name -match '^(?i)(licen[cs]e|notice|copying)' })
+    return @(Sort-OrdinalBy $files 'Name')
 }
 
 function Get-Sha256Of {
@@ -39,14 +39,41 @@ function Get-Sha256Of {
     }
 }
 
-function Get-LicenseLabel {
+# 排序一律用 Ordinal（按码位比较），**绝不**用 Sort-Object 的默认文化排序：
+# 本机是 zh-CN + Windows PowerShell 5.1，CI 是 en-US + PowerShell 7，两者对含中文的
+# 标签排序结果不同 —— 曾导致 CI 上同一依赖生成出不同顺序的文件，门禁把自己判红。
+function Sort-OrdinalBy {
+    param([object[]]$Items, [string]$KeyProperty)
+    $arr = @($Items)
+    if ($arr.Count -eq 0) { return @() }
+    $pairs = New-Object 'System.Collections.Generic.List[object]'
+    foreach ($it in $arr) {
+        $pairs.Add([pscustomobject]@{ Key = [string]$it.$KeyProperty; Item = $it })
+    }
+    $cmp = [System.Comparison[object]]{ param($a, $b) [string]::CompareOrdinal($a.Key, $b.Key) }
+    $pairs.Sort($cmp)
+    return @($pairs | ForEach-Object { $_.Item })
+}
+
+# 许可标签拆成「ASCII 代号（只用于排序）+ 中文展示名」，中文不参与排序比较。
+function Get-LicenseInfo {
     param([string]$Text)
-    if ($Text -match 'Apache License\s*\n\s*Version 2\.0') { return 'Apache License 2.0（全文）' }
-    if ($Text -match 'Apache License, Version 2\.0') { return 'Apache License 2.0（简式声明，全文见另一节）' }
-    if ($Text -match 'Redistribution and use in source and binary forms') { return 'BSD 3-Clause' }
-    if ($Text -match 'Permission is hereby granted, free of charge') { return 'MIT' }
-    if ($Text -match 'GNU GENERAL PUBLIC LICENSE') { return 'GPL（不应出现在本清单）' }
-    return '未识别许可文本'
+    if ($Text -match 'Apache License\s*\n\s*Version 2\.0') {
+        return [pscustomobject]@{ Code = 'apache2-full'; Label = 'Apache License 2.0（全文）' }
+    }
+    if ($Text -match 'Apache License, Version 2\.0') {
+        return [pscustomobject]@{ Code = 'apache2-short'; Label = 'Apache License 2.0（简式声明，全文见另一节）' }
+    }
+    if ($Text -match 'Redistribution and use in source and binary forms') {
+        return [pscustomobject]@{ Code = 'bsd3'; Label = 'BSD 3-Clause' }
+    }
+    if ($Text -match 'Permission is hereby granted, free of charge') {
+        return [pscustomobject]@{ Code = 'mit'; Label = 'MIT' }
+    }
+    if ($Text -match 'GNU GENERAL PUBLIC LICENSE') {
+        return [pscustomobject]@{ Code = 'gpl'; Label = 'GPL（不应出现在本清单）' }
+    }
+    return [pscustomobject]@{ Code = 'unknown'; Label = '未识别许可文本' }
 }
 
 # ---- 1. 读依赖图：区分「链接进二进制」与「仅构建期使用」 ----
@@ -90,9 +117,10 @@ foreach ($p in $meta.packages) {
         License = if ($p.license) { $p.license } else { '(未声明)' }
         Dir     = $dir
         Runtime = $runtimeIds.Contains($p.id)
+        SortKey = ("{0}|{1}" -f $p.name, $p.version)
     }
 }
-$rows = @($rows | Sort-Object Name, Version)
+$rows = @(Sort-OrdinalBy $rows 'SortKey')
 if ($rows.Count -eq 0) { throw '没有找到任何第三方依赖，检查 cargo metadata 输出' }
 
 # ---- 2. 收集许可全文并按内容去重 ----
@@ -102,8 +130,10 @@ foreach ($row in $rows) {
         $text = Convert-ToLf (Get-Content -LiteralPath $f.FullName -Raw -Encoding UTF8)
         $sha = Get-Sha256Of $text
         if (-not $texts.ContainsKey($sha)) {
+            $info = Get-LicenseInfo $text
             $texts[$sha] = [pscustomobject]@{
-                Label   = Get-LicenseLabel $text
+                Code    = $info.Code
+                Label   = $info.Label
                 Text    = $text.TrimEnd("`n")
                 Sources = New-Object 'System.Collections.Generic.List[string]'
             }
@@ -122,6 +152,7 @@ $bsdPath = Join-Path $hidapiBundled 'LICENSE-bsd.txt'
 if (-not (Test-Path -LiteralPath $bsdPath)) { throw "找不到 HIDAPI 内嵌 C 库的 BSD 许可：$bsdPath" }
 $bsdText = Convert-ToLf (Get-Content -LiteralPath $bsdPath -Raw -Encoding UTF8)
 $texts[(Get-Sha256Of $bsdText)] = [pscustomobject]@{
+    Code    = 'bsd3-hidapi'
     Label   = 'BSD 3-Clause（HIDAPI C 库）'
     Text    = $bsdText.TrimEnd("`n")
     Sources = (New-Object 'System.Collections.Generic.List[string]')
@@ -189,13 +220,13 @@ $gen += ''
 
 $gen += '四、许可全文（按内容去重，每份只出现一次）'
 $gen += '------------------------------------------'
-# 输出顺序按「许可名 + 首个适用组件」排序，保证每次生成结果一致。
+# 输出顺序按「许可代号 + 首个适用组件」排序，保证每次生成结果一致（见 Sort-OrdinalBy 注释）。
 $ordered = @()
 foreach ($sha in $texts.Keys) {
     $entry = $texts[$sha]
-    $ordered += [pscustomobject]@{ SortKey = ("{0}|{1}" -f $entry.Label, $entry.Sources[0]); Entry = $entry }
+    $ordered += [pscustomobject]@{ SortKey = ("{0}|{1}" -f $entry.Code, $entry.Sources[0]); Entry = $entry }
 }
-$ordered = @($ordered | Sort-Object SortKey)
+$ordered = @(Sort-OrdinalBy $ordered 'SortKey')
 $order = 0
 foreach ($item in $ordered) {
     $entry = $item.Entry
